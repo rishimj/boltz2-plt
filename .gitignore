@@ -164,3 +164,22 @@ cython_debug/
 # Boltz prediction outputs
 #   All result files generated from a boltz prediction call
 boltz_results_*/
+# Virtual environments
+boltz_env/
+
+# Cache directories
+.boltz_cache/
+
+# Test outputs
+test_output/
+test_output*/
+
+# Timing outputs
+timing_output/
+**/timing_output/
+
+# Temporary line-numbered files
+**/*#L*
+
+# CSV results
+timing_results.csv

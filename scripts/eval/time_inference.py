@@ -10,6 +10,7 @@ This script runs inference on all example YAML files and measures:
 """
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -104,6 +105,25 @@ def run_boltz_predict(
     print(f"Running: {' '.join(cmd)}")
     start_time = time.time()
     
+    # Set cache directories to writable locations
+    env = os.environ.copy()
+    base_dir = Path(__file__).parent.parent.parent
+    
+    # Override HOME to writable directory to avoid /nethome permission issues
+    env['HOME'] = '/usr/scratch/rmanimaran8'
+    
+    # Set BOLTZ_CACHE
+    if 'BOLTZ_CACHE' not in env:
+        cache_dir = base_dir / '.boltz_cache'
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        env['BOLTZ_CACHE'] = str(cache_dir)
+    
+    # Set XDG_CACHE_HOME for triton and other cache needs
+    if 'XDG_CACHE_HOME' not in env:
+        xdg_cache = base_dir / '.cache'
+        xdg_cache.mkdir(parents=True, exist_ok=True)
+        env['XDG_CACHE_HOME'] = str(xdg_cache)
+    
     try:
         result = subprocess.run(
             cmd,
@@ -111,6 +131,7 @@ def run_boltz_predict(
             stderr=subprocess.PIPE,
             universal_newlines=True,
             check=True,
+            env=env,
         )
         success = True
         error_msg = None
