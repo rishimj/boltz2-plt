@@ -64,7 +64,7 @@ class AttentionPairBias(nn.Module):
         s: Tensor,
         z: Tensor,
         mask: Tensor,
-        k_in: Tensor,
+        k_in: Optional[Tensor] = None,
         multiplicity: int = 1,
     ) -> Tensor:
         """Forward pass.
@@ -77,6 +77,8 @@ class AttentionPairBias(nn.Module):
             The input pairwise tensor or bias (B, N, N, D)
         mask : torch.Tensor
             The pairwise mask tensor (B, N, N)
+        k_in : torch.Tensor, optional
+            The input for key/value projections. If None, uses s.
 
         Returns
         -------
@@ -85,6 +87,10 @@ class AttentionPairBias(nn.Module):
 
         """
         B = s.shape[0]
+        
+        # Use s if k_in not provided (for backward compatibility)
+        if k_in is None:
+            k_in = s
 
         # Compute projections
         q = self.proj_q(s).view(B, -1, self.num_heads, self.head_dim)

@@ -1,4 +1,5 @@
 import torch
+from typing import Optional
 from einops.layers.torch import Rearrange
 from torch import Tensor, nn
 
@@ -67,6 +68,7 @@ class AttentionPairBias(nn.Module):
         multiplicity: int = 1,
         to_keys=None,
         model_cache=None,
+        k_in: Optional[Tensor] = None,
     ) -> Tensor:
         """Forward pass.
 
@@ -80,6 +82,8 @@ class AttentionPairBias(nn.Module):
             The pairwise mask tensor (B, N)
         multiplicity : int, optional
             The diffusion batch size, by default 1
+        k_in : torch.Tensor, optional
+            Input for keys (for backward compatibility with v2)
 
         Returns
         -------
@@ -93,16 +97,20 @@ class AttentionPairBias(nn.Module):
         if self.initial_norm:
             s = self.norm_s(s)
 
-        if to_keys is not None:
-            k_in = to_keys(s)
+        # Handle k_in parameter (v2 compatibility)
+        if k_in is not None:
+            # If k_in provided explicitly, use it
+            k_in_val = k_in
+        elif to_keys is not None:
+            k_in_val = to_keys(s)
             mask = to_keys(mask.unsqueeze(-1)).squeeze(-1)
         else:
-            k_in = s
+            k_in_val = s
 
         # Compute projections
         q = self.proj_q(s).view(B, -1, self.num_heads, self.head_dim)
-        k = self.proj_k(k_in).view(B, -1, self.num_heads, self.head_dim)
-        v = self.proj_v(k_in).view(B, -1, self.num_heads, self.head_dim)
+        k = self.proj_k(k_in_val).view(B, -1, self.num_heads, self.head_dim)
+        v = self.proj_v(k_in_val).view(B, -1, self.num_heads, self.head_dim)
 
         # Caching z projection during diffusion roll-out
         if model_cache is None or "z" not in model_cache:
