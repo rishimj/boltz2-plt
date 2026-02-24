@@ -183,3 +183,20 @@ timing_output/
 
 # CSV results
 timing_results.csv
+
+# Checkpoint files
+*.ckpt
+*.ckpt.temp
+
+# Transcoder activations and models
+transcoder/pilot_activations/
+transcoder/pilot_activations_synthetic/
+transcoder/real_activations/
+transcoder/*.pt
+transcoder/pilot_model/
+transcoder/real_model_synthetic/
+transcoder/pilot_checkpoints/
+
+# Large data files
+*.npz
+*.tar
