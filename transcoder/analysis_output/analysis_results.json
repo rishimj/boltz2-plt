@@ -1,0 +1,121 @@
+{
+  "hyperparameters": {
+    "data_dir": "../real_activations/",
+    "checkpoint_dir": "checkpoints",
+    "batch_size": 1,
+    "num_steps": 500,
+    "lr": 0.001,
+    "log_every": 10,
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32,
+    "dead_steps_threshold": 10000
+  },
+  "training_metrics": {
+    "step": 500,
+    "epoch": 249,
+    "loss_total": 714.4293212890625,
+    "loss_reconstruction": 701.81884765625,
+    "loss_consistency": 12.610468864440918,
+    "loss_auxk": 0.0,
+    "dead_neurons": 0
+  },
+  "protein_results": [
+    {
+      "protein_name": "protein_1",
+      "n_residues": 117,
+      "mse": {
+        "y1_from_s1": 259.2030944824219,
+        "y2_from_s1": 6.665517330169678,
+        "y1_from_s2": 288.1780090332031,
+        "y2_from_s2": 6.310972213745117
+      },
+      "r2": {
+        "y1_from_s1": 0.5851731300354004,
+        "y2_from_s1": 0.18621206283569336,
+        "y1_from_s2": 0.5388018488883972,
+        "y2_from_s2": 0.22949820756912231
+      },
+      "sparsity": {
+        "active_s1": 16.0,
+        "active_s2": 16.0,
+        "total": 2048,
+        "dead_s1": 629,
+        "dead_s2": 679
+      },
+      "top_neurons_s1": [
+        1091,
+        449,
+        1787,
+        590,
+        760,
+        544,
+        1288,
+        136,
+        81,
+        1155
+      ],
+      "top_neurons_s2": [
+        1454,
+        382,
+        1822,
+        1863,
+        1005,
+        209,
+        1620,
+        1600,
+        136,
+        913
+      ]
+    },
+    {
+      "protein_name": "protein_2",
+      "n_residues": 80,
+      "mse": {
+        "y1_from_s1": 330.92047119140625,
+        "y2_from_s1": 7.425509929656982,
+        "y1_from_s2": 356.0213623046875,
+        "y2_from_s2": 7.06176233291626
+      },
+      "r2": {
+        "y1_from_s1": 0.542169988155365,
+        "y2_from_s1": 0.20884406566619873,
+        "y1_from_s2": 0.5074427723884583,
+        "y2_from_s2": 0.2475997805595398
+      },
+      "sparsity": {
+        "active_s1": 16.0,
+        "active_s2": 16.0,
+        "total": 2048,
+        "dead_s1": 679,
+        "dead_s2": 736
+      },
+      "top_neurons_s1": [
+        1091,
+        590,
+        449,
+        1787,
+        544,
+        760,
+        1288,
+        136,
+        81,
+        1432
+      ],
+      "top_neurons_s2": [
+        1454,
+        382,
+        1822,
+        1863,
+        209,
+        1005,
+        136,
+        431,
+        558,
+        913
+      ]
+    }
+  ]
+}
