@@ -1,0 +1,41 @@
+{
+  "hyperparameters": {
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32,
+    "batch_size": 1,
+    "dead_steps_threshold": 10000,
+    "lr": 0.001,
+    "layer_idx": 0,
+    "max_steps": 1
+  },
+  "metadata": {
+    "timestamp": "2026-04-09T18:11:27.710113",
+    "training_time_seconds": 1.8447542190551758,
+    "proteins_processed": 1,
+    "epoch_count": 1,
+    "streaming_mode": true,
+    "fasta_path": "/usr/scratch/rmanimaran8/boltz/examples/prot.fasta",
+    "checkpoint_dir": "/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_checkpoints_nmse_test/layer_00"
+  },
+  "final_metrics": {
+    "step": 1,
+    "loss_total": 23.131940841674805,
+    "loss_reconstruction": 14.04865837097168,
+    "loss_consistency": 9.083282470703125,
+    "loss_auxk": 0.0,
+    "dead_neurons": 0
+  },
+  "all_metrics": [
+    {
+      "step": 1,
+      "loss_total": 23.131940841674805,
+      "loss_reconstruction": 14.04865837097168,
+      "loss_consistency": 9.083282470703125,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    }
+  ]
+}

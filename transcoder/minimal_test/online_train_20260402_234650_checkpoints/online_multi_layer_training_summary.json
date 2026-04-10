@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-04-02T23:48:10.823430",
+  "training_time_seconds": 1.700551986694336,
+  "proteins_processed": 1,
+  "epoch_count": 1,
+  "streaming_mode": true,
+  "fasta_path": "/usr/scratch/rmanimaran8/boltz/examples/prot.fasta",
+  "checkpoint_dir": "/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_train_20260402_234650_checkpoints",
+  "layers": [
+    0
+  ],
+  "results": [
+    {
+      "layer_idx": 0,
+      "status": "success",
+      "training_time_seconds": 1.700551986694336,
+      "final_loss_total": 895.2144775390625,
+      "final_loss_reconstruction": 844.5836181640625,
+      "final_loss_consistency": 50.63088607788086,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 1,
+      "checkpoint_dir": "/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_train_20260402_234650_checkpoints/layer_00",
+      "checkpoint_path": "/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_train_20260402_234650_checkpoints/layer_00/universal_transcoder_final.pt",
+      "metrics_path": "/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_train_20260402_234650_checkpoints/layer_00/training_metrics.json"
+    }
+  ],
+  "hyperparameters": {
+    "num_steps": 1,
+    "batch_size": 1,
+    "lr": 0.001,
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32,
+    "dead_steps_threshold": 10000,
+    "max_proteins": 0,
+    "recycling_steps": 0
+  }
+}

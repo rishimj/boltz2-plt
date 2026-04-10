@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-03-09T00:51:09.202757",
+  "overall_time_seconds": 4.004603862762451,
+  "num_layers_trained": 1,
+  "num_successful": 1,
+  "num_failed": 0,
+  "num_skipped": 0,
+  "successful_layers": [
+    40
+  ],
+  "failed_layers": [],
+  "skipped_layers": [],
+  "hyperparameters": {
+    "batch_size": 1,
+    "num_steps": 10,
+    "lr": 0.001,
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32
+  },
+  "results": [
+    {
+      "layer_idx": 40,
+      "status": "success",
+      "training_time_seconds": 2.0593996047973633,
+      "final_loss_total": 1538.451171875,
+      "final_loss_reconstruction": 1357.8385009765625,
+      "final_loss_consistency": 180.61273193359375,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 10,
+      "checkpoint_dir": "../minimal_test/checkpoints/layer_40"
+    }
+  ]
+}

@@ -24,6 +24,10 @@ The transcoder learns sparse representations of both:
 - `train.py`: Train the transcoder on collected activations
 - `run_pilot.py`: End-to-end pilot run script
 
+## Additional Documentation
+
+- `BOLTZ_TRANSCODER_ARCHITECTURE_MATH.md`: Boltz architecture summary, transcoder background, reasons a normal transcoder does not directly fit Boltz, extension design, and full equation-level comparison.
+
 ## Quick Start (Pilot Run)
 
 ### 1. Download Boltz2 checkpoint

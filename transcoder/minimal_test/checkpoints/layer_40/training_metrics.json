@@ -1,0 +1,118 @@
+{
+  "hyperparameters": {
+    "data_dir": "../minimal_test/activations/layer_40",
+    "checkpoint_dir": "../minimal_test/checkpoints/layer_40",
+    "batch_size": 1,
+    "num_steps": 10,
+    "lr": 0.001,
+    "log_every": 2,
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32,
+    "dead_steps_threshold": 10000
+  },
+  "training_time_seconds": 2.0593996047973633,
+  "final_metrics": {
+    "step": 10,
+    "epoch": 9,
+    "loss_total": 1538.451171875,
+    "loss_reconstruction": 1357.8385009765625,
+    "loss_consistency": 180.61273193359375,
+    "loss_auxk": 0.0,
+    "dead_neurons": 0
+  },
+  "all_metrics": [
+    {
+      "step": 1,
+      "epoch": 0,
+      "loss_total": 2519.728515625,
+      "loss_reconstruction": 1942.275634765625,
+      "loss_consistency": 577.4529418945312,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 2,
+      "epoch": 1,
+      "loss_total": 2219.053466796875,
+      "loss_reconstruction": 1778.629150390625,
+      "loss_consistency": 440.4243469238281,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 3,
+      "epoch": 2,
+      "loss_total": 2003.17431640625,
+      "loss_reconstruction": 1654.33056640625,
+      "loss_consistency": 348.84375,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 4,
+      "epoch": 3,
+      "loss_total": 1859.06494140625,
+      "loss_reconstruction": 1568.586181640625,
+      "loss_consistency": 290.4787292480469,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 5,
+      "epoch": 4,
+      "loss_total": 1775.7779541015625,
+      "loss_reconstruction": 1514.308837890625,
+      "loss_consistency": 261.4691467285156,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 6,
+      "epoch": 5,
+      "loss_total": 1704.181396484375,
+      "loss_reconstruction": 1468.179443359375,
+      "loss_consistency": 236.001953125,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 7,
+      "epoch": 6,
+      "loss_total": 1653.083984375,
+      "loss_reconstruction": 1431.960693359375,
+      "loss_consistency": 221.12330627441406,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 8,
+      "epoch": 7,
+      "loss_total": 1604.820556640625,
+      "loss_reconstruction": 1401.17626953125,
+      "loss_consistency": 203.64434814453125,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 9,
+      "epoch": 8,
+      "loss_total": 1572.3314208984375,
+      "loss_reconstruction": 1379.8341064453125,
+      "loss_consistency": 192.497314453125,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    },
+    {
+      "step": 10,
+      "epoch": 9,
+      "loss_total": 1538.451171875,
+      "loss_reconstruction": 1357.8385009765625,
+      "loss_consistency": 180.61273193359375,
+      "loss_auxk": 0.0,
+      "dead_neurons": 0
+    }
+  ]
+}

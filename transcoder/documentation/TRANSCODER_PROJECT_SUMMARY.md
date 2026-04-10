@@ -263,6 +263,7 @@ Evaluates the trained model on both proteins:
 │
 ├── documentation/                 # Project documentation
 │   ├── TRANSCODER_PROJECT_SUMMARY.md  # This file ⭐
+│   ├── PLT_ARCHITECTURE_GUIDE.md # Detailed PLT architecture explanation ⭐
 │   ├── QUICKSTART.md             # Quick start guide
 │   └── (other documentation)
 │
@@ -625,6 +626,7 @@ checkpoint.keys() = [
 ## Citations & References
 
 **PLT (Per-Layer Transcoder):**
+- **Architecture Guide:** See `PLT_ARCHITECTURE_GUIDE.md` for detailed explanation ⭐
 - Paper: "Sparse Autoencoders for Interpretability" (Anthropic, 2024)
 - Key idea: TopK sparsity + unit norm constraints + dead neuron resurrection
 
@@ -681,4 +683,5 @@ This work represents the first step toward fully understanding what Boltz2 learn
 - Analysis script: `training_scripts/analyze_transcoder.py`
 - Collection script: `collection_scripts/collect_batch.py`
 - Project summary: `documentation/TRANSCODER_PROJECT_SUMMARY.md` (this file)
+- PLT Architecture: `documentation/PLT_ARCHITECTURE_GUIDE.md` ⭐
 - Directory guide: `../DIRECTORY_STRUCTURE.md`

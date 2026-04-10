@@ -1,0 +1,102 @@
+{
+  "timestamp": "2026-03-09T19:34:02.501025",
+  "overall_time_seconds": 15614.308708429337,
+  "num_layers_trained": 6,
+  "num_successful": 6,
+  "num_failed": 0,
+  "num_skipped": 0,
+  "successful_layers": [
+    0,
+    8,
+    16,
+    24,
+    32,
+    40
+  ],
+  "failed_layers": [],
+  "skipped_layers": [],
+  "hyperparameters": {
+    "batch_size": 10,
+    "num_steps": 100,
+    "lr": 0.001,
+    "d_model": 384,
+    "d_hidden": 2048,
+    "d_pair": 128,
+    "k": 16,
+    "auxk": 32
+  },
+  "results": [
+    {
+      "layer_idx": 0,
+      "status": "success",
+      "training_time_seconds": 1698.3570568561554,
+      "final_loss_total": 58.637176513671875,
+      "final_loss_reconstruction": 47.958152770996094,
+      "final_loss_consistency": 10.679025650024414,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_00"
+    },
+    {
+      "layer_idx": 8,
+      "status": "success",
+      "training_time_seconds": 2313.1220474243164,
+      "final_loss_total": 918.7045288085938,
+      "final_loss_reconstruction": 777.0564575195312,
+      "final_loss_consistency": 141.64808654785156,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_08"
+    },
+    {
+      "layer_idx": 16,
+      "status": "success",
+      "training_time_seconds": 2678.3001322746277,
+      "final_loss_total": 1176.10595703125,
+      "final_loss_reconstruction": 1009.1705322265625,
+      "final_loss_consistency": 166.93536376953125,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_16"
+    },
+    {
+      "layer_idx": 24,
+      "status": "success",
+      "training_time_seconds": 3060.894372701645,
+      "final_loss_total": 1308.3856201171875,
+      "final_loss_reconstruction": 1130.5301513671875,
+      "final_loss_consistency": 177.85549926757812,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_24"
+    },
+    {
+      "layer_idx": 32,
+      "status": "success",
+      "training_time_seconds": 3702.9063200950623,
+      "final_loss_total": 1241.919921875,
+      "final_loss_reconstruction": 1069.7593994140625,
+      "final_loss_consistency": 172.16055297851562,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_32"
+    },
+    {
+      "layer_idx": 40,
+      "status": "success",
+      "training_time_seconds": 2156.1893858909607,
+      "final_loss_total": 745.3133544921875,
+      "final_loss_reconstruction": 641.218017578125,
+      "final_loss_consistency": 104.09532165527344,
+      "final_loss_auxk": 0.0,
+      "final_dead_neurons": 0,
+      "num_steps": 100,
+      "checkpoint_dir": "../multi_layer_10p_checkpoints/layer_40"
+    }
+  ]
+}

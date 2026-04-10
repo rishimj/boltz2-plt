@@ -1,0 +1,5 @@
+STATUS=SUCCESS
+SUCCESS_TIME=2026-04-02T23:48:13-04:00
+ATTEMPTS=1
+LOG=/usr/scratch/rmanimaran8/boltz/transcoder/logs/online_train_20260402_234650.log
+CHECKPOINT_DIR=/usr/scratch/rmanimaran8/boltz/transcoder/minimal_test/online_train_20260402_234650_checkpoints

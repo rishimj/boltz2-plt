@@ -1,0 +1,27 @@
+{
+  "num_layers": 1,
+  "successful_layers": [
+    40
+  ],
+  "failed_layers": [],
+  "results": [
+    {
+      "layer_idx": 40,
+      "status": "success",
+      "total_samples": 1,
+      "num_batches": 1,
+      "mse_y1": 594.26123046875,
+      "rmse_y1": 24.377473832797975,
+      "r2_y1": 0.12854152917861938,
+      "mse_y2": 78.47525787353516,
+      "rmse_y2": 8.85862618432086,
+      "r2_y2": -13.538700103759766,
+      "avg_sparsity": 16.0,
+      "expected_sparsity": 16,
+      "encoder_norm_mean": 1.2090200185775757,
+      "decoder_y1_norm_mean": 1.0,
+      "decoder_y2_norm_mean": 1.0,
+      "is_unit_norm": false
+    }
+  ]
+}
