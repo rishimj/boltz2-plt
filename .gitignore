@@ -193,10 +193,19 @@ transcoder/pilot_activations/
 transcoder/pilot_activations_synthetic/
 transcoder/real_activations/
 transcoder/*.pt
+transcoder/**/*.pt
 transcoder/pilot_model/
 transcoder/real_model_synthetic/
 transcoder/pilot_checkpoints/
+transcoder/minimal_test/
+transcoder/overnight_runs/
+transcoder/logs/
+transcoder/pid_files/
+transcoder/universal_transcoder/data/
+transcoder/multi_layer_10p_activations/
+transcoder/old_experiments/
 
 # Large data files
 *.npz
 *.tar
+verification_output/
