@@ -101,6 +101,16 @@ def prepare_deterministic_model(model: Boltz2, disable_msa_subsample: bool = Tru
             model.msa_module.subsample_msa = False
             print(f"  MSA subsampling disabled (was: {original_subsample})")
 
+    # Some checkpoints have steering_args=None, but diffusion sampling expects
+    # a dict with boolean flags. Provide a deterministic no-steering default.
+    if getattr(model, 'steering_args', None) is None:
+        model.steering_args = {
+            'fk_steering': False,
+            'physical_guidance_update': False,
+            'contact_guidance_update': False,
+        }
+        print("  Steering disabled with default args")
+
     return model
 
 
@@ -338,6 +348,8 @@ def run_deterministic_forward(
                 return output
             except Exception as e:
                 print(f"  Forward pass error: {e}")
+                import traceback
+                traceback.print_exc(limit=4)
                 return None
 
 
@@ -388,6 +400,55 @@ def compare_activations(
                 results['max_diff'] = max(results['max_diff'], max_diff)
 
         results['layers'][layer_idx] = layer_results
+
+    return results
+
+
+def compare_forward_outputs(
+    out1: Optional[Dict[str, torch.Tensor]],
+    out2: Optional[Dict[str, torch.Tensor]],
+    tolerance: float = 1e-6,
+) -> Dict[str, Any]:
+    """Compare selected forward outputs from two deterministic runs."""
+    tracked_keys = ["sample_atom_coords", "plddt", "pae", "ptm", "iptm"]
+    results: Dict[str, Any] = {
+        'identical': True,
+        'keys': {},
+        'max_diff': 0.0,
+    }
+
+    if out1 is None or out2 is None:
+        return {
+            'identical': False,
+            'keys': {},
+            'max_diff': float('inf'),
+            'error': 'one_or_both_forward_outputs_missing',
+        }
+
+    for key in tracked_keys:
+        t1 = out1.get(key)
+        t2 = out2.get(key)
+
+        if t1 is None or t2 is None:
+            results['keys'][key] = {'present': False}
+            results['identical'] = False
+            continue
+
+        max_diff = torch.abs(t1 - t2).max().item()
+        mean_diff = torch.abs(t1 - t2).mean().item()
+        identical = max_diff < tolerance
+
+        results['keys'][key] = {
+            'present': True,
+            'shape': list(t1.shape),
+            'max_diff': max_diff,
+            'mean_diff': mean_diff,
+            'identical': identical,
+        }
+
+        if not identical:
+            results['identical'] = False
+        results['max_diff'] = max(results['max_diff'], max_diff)
 
     return results
 
@@ -538,6 +599,22 @@ def run_baseline_test(
     comparison = compare_activations(act1, act2, tolerance)
     print_comparison_results(comparison)
 
+    print("\nComparing forward outputs between runs...")
+    output_comparison = compare_forward_outputs(output1, output2, tolerance)
+    if output_comparison['identical']:
+        print("  Forward outputs are deterministic for all tracked keys")
+    else:
+        print("  Forward outputs are NOT fully deterministic across tracked keys")
+    for key, stats in output_comparison.get('keys', {}).items():
+        if not stats.get('present'):
+            print(f"    {key}: missing")
+            continue
+        status = "PASS" if stats['identical'] else "FAIL"
+        print(
+            f"    {key}: max={stats['max_diff']:.2e}, "
+            f"mean={stats['mean_diff']:.2e} [{status}]"
+        )
+
     # ===== SAVE RESULTS =====
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -553,12 +630,21 @@ def run_baseline_test(
         'device': device,
         'identical': comparison['identical'],
         'max_diff': comparison['max_diff'],
+        'forward_outputs_identical': output_comparison['identical'],
+        'forward_outputs_max_diff': output_comparison['max_diff'],
         'comparison': {
             str(k): {k2: {k3: float(v3) if isinstance(v3, (int, float)) else v3
                          for k3, v3 in v2.items()}
                     for k2, v2 in v.items()}
             for k, v in comparison['layers'].items()
-        }
+        },
+        'forward_output_comparison': {
+            k: {
+                kk: (float(vv) if isinstance(vv, (int, float)) else vv)
+                for kk, vv in v.items()
+            }
+            for k, v in output_comparison.get('keys', {}).items()
+        },
     }
 
     results_path = output_dir / f"baseline_results_{timestamp}.json"
@@ -577,11 +663,15 @@ def run_baseline_test(
     print("BASELINE TEST SUMMARY")
     print("=" * 70)
 
-    if comparison['identical']:
+    if comparison['identical'] and output_comparison['identical']:
         print("\n  SUCCESS: Boltz2 produces deterministic outputs!")
         print("  The saved activations can be used as ground truth for PLT training.")
     else:
         print("\n  WARNING: Non-determinism detected!")
+        if not comparison['identical']:
+            print("  Activation mismatch detected across repeated runs.")
+        if not output_comparison['identical']:
+            print("  Forward output mismatch detected across repeated runs.")
         print("  Check if MSA subsampling is disabled and seeds are properly set.")
 
     return results
@@ -624,7 +714,7 @@ def main():
         tolerance=args.tolerance
     )
 
-    return 0 if results['identical'] else 1
+    return 0 if (results['identical'] and results.get('forward_outputs_identical', False)) else 1
 
 
 if __name__ == '__main__':

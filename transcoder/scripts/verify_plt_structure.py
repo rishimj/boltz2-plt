@@ -119,6 +119,57 @@ def compute_plddt_correlation(
     return corr_matrix[0, 1].item()
 
 
+def compute_tensor_comparison(
+    tensor1: torch.Tensor,
+    tensor2: torch.Tensor
+) -> Dict[str, Any]:
+    """Compute comparison metrics for two tensors with identical shape."""
+    t1 = tensor1.detach().float().cpu()
+    t2 = tensor2.detach().float().cpu()
+
+    diff = t1 - t2
+    mse = (diff ** 2).mean().item()
+    variance = t1.var(unbiased=False).item()
+    nmse = mse / (variance + 1e-8)
+    max_diff = diff.abs().max().item()
+    mean_diff = diff.abs().mean().item()
+
+    flat1 = t1.flatten()
+    flat2 = t2.flatten()
+    if flat1.numel() >= 2:
+        correlation = torch.corrcoef(torch.stack([flat1, flat2]))[0, 1].item()
+    else:
+        correlation = float('nan')
+
+    ss_res = ((flat1 - flat2) ** 2).sum().item()
+    ss_tot = ((flat1 - flat1.mean()) ** 2).sum().item()
+    r2 = 1 - (ss_res / (ss_tot + 1e-8))
+
+    return {
+        'shape': list(t1.shape),
+        'mse': mse,
+        'nmse': nmse,
+        'max_diff': max_diff,
+        'mean_diff': mean_diff,
+        'correlation': correlation,
+        'r2': r2,
+    }
+
+
+def summarize_output_structure(output: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Summarize output keys, types, and tensor shapes for a forward pass."""
+    summary = {}
+    for key, value in sorted(output.items()):
+        item: Dict[str, Any] = {'type': type(value).__name__}
+        if torch.is_tensor(value):
+            item['shape'] = list(value.shape)
+            item['dtype'] = str(value.dtype)
+        elif isinstance(value, dict):
+            item['keys'] = sorted(value.keys())
+        summary[key] = item
+    return summary
+
+
 class StructureVerifier:
     """
     Verifies PLT integration by comparing structure outputs.
@@ -131,7 +182,7 @@ class StructureVerifier:
         layer_indices: List[int] = [0],
         device: str = 'cuda',
         seed: int = 42,
-        reconstruction_method: str = 'outer_sum'
+        reconstruction_method: str = 'broadcast_i'
     ):
         """
         Initialize structure verifier.
@@ -168,6 +219,8 @@ class StructureVerifier:
         # Results storage
         self.baseline_output = None
         self.plt_output = None
+        self.baseline_raw_output = None
+        self.plt_raw_output = None
         self.z_comparisons = {}
 
     def run_baseline(
@@ -215,6 +268,8 @@ class StructureVerifier:
                 except Exception as e:
                     print(f"  Forward pass error: {e}")
                     output = {}
+
+        self.baseline_raw_output = output
 
         # Extract relevant outputs
         self.baseline_output = {
@@ -300,6 +355,8 @@ class StructureVerifier:
         # Clean up
         plt_inserter.remove_hooks()
 
+        self.plt_raw_output = output
+
         # Extract relevant outputs
         self.plt_output = {
             'coordinates': output.get('sample_atom_coords'),
@@ -310,6 +367,84 @@ class StructureVerifier:
         }
 
         return self.plt_output
+
+    def compare_output_structure_and_trunk(self) -> Dict[str, Any]:
+        """
+        Compare output schema and trunk tensors between baseline and PLT runs.
+
+        Returns:
+            Dict with schema and trunk comparisons
+        """
+        print("\n" + "=" * 70)
+        print("OUTPUT SCHEMA AND TRUNK COMPARISON")
+        print("=" * 70)
+
+        if self.baseline_raw_output is None or self.plt_raw_output is None:
+            return {
+                'schema_match': False,
+                'missing_outputs': True,
+                'baseline_keys': [],
+                'plt_keys': [],
+                'missing_in_plt': [],
+                'extra_in_plt': [],
+                'tracked_keys': {},
+                'trunk': {},
+            }
+
+        baseline_keys = sorted(self.baseline_raw_output.keys())
+        plt_keys = sorted(self.plt_raw_output.keys())
+        missing_in_plt = sorted(set(baseline_keys) - set(plt_keys))
+        extra_in_plt = sorted(set(plt_keys) - set(baseline_keys))
+
+        schema = {
+            'schema_match': baseline_keys == plt_keys,
+            'baseline_keys': baseline_keys,
+            'plt_keys': plt_keys,
+            'missing_in_plt': missing_in_plt,
+            'extra_in_plt': extra_in_plt,
+            'tracked_keys': {},
+            'trunk': {},
+            'baseline_summary': summarize_output_structure(self.baseline_raw_output),
+            'plt_summary': summarize_output_structure(self.plt_raw_output),
+        }
+
+        tracked_keys = ['sample_atom_coords', 'plddt', 'pae', 'ptm', 'iptm', 's', 'z']
+        for key in tracked_keys:
+            base_val = self.baseline_raw_output.get(key)
+            plt_val = self.plt_raw_output.get(key)
+            if torch.is_tensor(base_val) and torch.is_tensor(plt_val):
+                schema['tracked_keys'][key] = {
+                    'baseline_shape': list(base_val.shape),
+                    'plt_shape': list(plt_val.shape),
+                    'same_shape': list(base_val.shape) == list(plt_val.shape),
+                }
+            else:
+                schema['tracked_keys'][key] = {
+                    'baseline_present': base_val is not None,
+                    'plt_present': plt_val is not None,
+                }
+
+        for key in ['s', 'z']:
+            base_val = self.baseline_raw_output.get(key)
+            plt_val = self.plt_raw_output.get(key)
+            if torch.is_tensor(base_val) and torch.is_tensor(plt_val):
+                schema['trunk'][key] = compute_tensor_comparison(base_val, plt_val)
+
+        print(f"\nSchema match: {schema['schema_match']}")
+        if missing_in_plt:
+            print(f"Missing in PLT output: {missing_in_plt}")
+        if extra_in_plt:
+            print(f"Extra in PLT output: {extra_in_plt}")
+
+        for key, metrics in schema['trunk'].items():
+            print(f"\nTrunk {key}:")
+            print(f"  Shape: {metrics['shape']}")
+            print(f"  NMSE:        {metrics['nmse']:.6f}")
+            print(f"  R² Score:    {metrics['r2']:.6f}")
+            print(f"  Correlation: {metrics['correlation']:.6f}")
+            print(f"  Max Diff:    {metrics['max_diff']:.6f}")
+
+        return schema
 
     def compare_structures(self) -> Dict[str, Any]:
         """
@@ -430,14 +565,27 @@ class StructureVerifier:
         # Run with PLT
         self.run_with_plt(fasta_path, recycling_steps)
 
+        # Compare output schema and trunk
+        output_schema = self.compare_output_structure_and_trunk()
+
         # Compare structures
         comparison = self.compare_structures()
+        comparison['output_schema'] = output_schema
 
-        # Compute overall success
+        # Compute overall success (must have actual metrics, not just missing failures)
         all_good = True
+        has_required_metrics = True
+        if comparison['rmsd'] is None:
+            has_required_metrics = False
+        if comparison['plddt_correlation'] is None:
+            has_required_metrics = False
+        if not comparison.get('z_comparisons'):
+            has_required_metrics = False
         if comparison['rmsd'] is not None and comparison['rmsd'] >= 2.0:
             all_good = False
         if comparison['plddt_correlation'] is not None and comparison['plddt_correlation'] < 0.95:
+            all_good = False
+        if not output_schema.get('schema_match', False):
             all_good = False
 
         for layer_idx, z_comp in comparison.get('z_comparisons', {}).items():
@@ -446,14 +594,20 @@ class StructureVerifier:
             if z_comp.get('r2', 0.0) < 0.9:
                 all_good = False
 
-        comparison['overall_success'] = all_good
+        for key, trunk_comp in output_schema.get('trunk', {}).items():
+            if trunk_comp.get('nmse', 1.0) >= 0.1:
+                all_good = False
+            if trunk_comp.get('r2', 0.0) < 0.9:
+                all_good = False
+
+        comparison['overall_success'] = all_good and has_required_metrics
 
         # Print summary
         print("\n" + "=" * 70)
         print("VERIFICATION SUMMARY")
         print("=" * 70)
 
-        if all_good:
+        if comparison['overall_success']:
             print("\n   SUCCESS: PLT integration meets all criteria!")
             print("   - Structure RMSD < 2.0 A")
             print("   - pLDDT correlation > 0.95")
@@ -461,10 +615,20 @@ class StructureVerifier:
             print("   - z reconstruction R² > 0.9")
         else:
             print("\n   WARNING: Some criteria not met")
+            if not has_required_metrics:
+                print("   - Missing required outputs/metrics (forward did not fully complete)")
             if comparison['rmsd'] is not None and comparison['rmsd'] >= 2.0:
                 print(f"   - RMSD = {comparison['rmsd']:.4f} A (target < 2.0)")
             if comparison['plddt_correlation'] is not None and comparison['plddt_correlation'] < 0.95:
                 print(f"   - pLDDT correlation = {comparison['plddt_correlation']:.4f} (target > 0.95)")
+            if not output_schema.get('schema_match', False):
+                print("   - Output schema mismatch between baseline and PLT runs")
+            for key, trunk_comp in output_schema.get('trunk', {}).items():
+                if trunk_comp.get('nmse', 1.0) >= 0.1 or trunk_comp.get('r2', 0.0) < 0.9:
+                    print(
+                        f"   - Trunk {key}: NMSE = {trunk_comp['nmse']:.4f}, "
+                        f"R² = {trunk_comp['r2']:.4f}"
+                    )
 
         # Save results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -486,6 +650,7 @@ class StructureVerifier:
                 'overall_success': comparison['overall_success'],
                 'success_criteria': comparison['success_criteria'],
             },
+            'output_schema': comparison.get('output_schema'),
             'z_comparisons': {
                 str(k): v for k, v in comparison.get('z_comparisons', {}).items()
             }
@@ -521,7 +686,7 @@ def main():
                        help='Random seed')
     parser.add_argument('--recycling-steps', type=int, default=0,
                        help='Number of recycling steps')
-    parser.add_argument('--reconstruction-method', type=str, default='outer_sum',
+    parser.add_argument('--reconstruction-method', type=str, default='broadcast_i',
                        choices=['outer_sum', 'outer_product', 'broadcast_i', 'broadcast_j'],
                        help='Method for pair reconstruction')
 

@@ -123,6 +123,15 @@ def load_boltz_model(checkpoint_path, device, disable_msa_subsample=True):
         model.msa_module.subsample_msa = False
         print(f"  MSA subsampling disabled (was: {original_value})")
 
+    # Boltz diffusion sampling expects steering_args to be a dict.
+    if getattr(model, 'steering_args', None) is None:
+        model.steering_args = {
+            'fk_steering': False,
+            'physical_guidance_update': False,
+            'contact_guidance_update': False,
+        }
+        print("  Steering disabled with default args")
+
     return model
 
 

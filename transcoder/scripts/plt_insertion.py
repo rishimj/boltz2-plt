@@ -7,8 +7,9 @@ the pair representation (z) at specific pairformer layers.
 
 Key Design Decision:
     The PLT outputs token-level predictions [B, N, 128], but z is pair-level
-    [B, N, N, 128]. We use OUTER SUM to reconstruct the pair representation:
-    z[i,j] = y[i] + y[j] - symmetric, captures pairwise relationships.
+    [B, N, N, 128]. The online trainer currently learns pair targets using a
+    row-broadcast expansion, so the verifier defaults to BROADCAST_I:
+    z[i,j] = y[i]. Alternative reconstructions remain available for ablations.
 
 Usage:
     from plt_insertion import PLTInsertion
@@ -147,7 +148,7 @@ class PLTInsertion:
         plt_checkpoints_dir: Optional[Path] = None,
         layer_indices: List[int] = [0, 8, 16, 24, 32, 40],
         device: str = 'cuda',
-        reconstruction_method: str = 'outer_sum'
+        reconstruction_method: str = 'broadcast_i'
     ):
         """
         Initialize PLT insertion manager.
@@ -223,12 +224,13 @@ class PLTInsertion:
 
             layer = model.pairformer_module.layers[layer_idx]
 
-            # Hook to capture s (single representation)
-            # This runs BEFORE the z hook, so s is available when z hook fires
-            def make_capture_s_hook(idx):
-                def hook(module, input, output):
-                    # Store the OUTPUT of transition_s
-                    self.captured_s[idx] = output.detach().clone()
+            # Hook to capture layer input s before transition_z runs.
+            # Pairformer executes transition_z before transition_s, so capturing
+            # transition_s output is too late for z replacement.
+            def make_capture_s_pre_hook(idx):
+                def hook(module, input):
+                    # PairformerLayer.forward signature: (s, z, mask, pair_mask, ...)
+                    self.captured_s[idx] = input[0].detach().clone()
                 return hook
 
             # Hook for z (pair representation)
@@ -321,11 +323,9 @@ class PLTInsertion:
                 raise ValueError(f"Unknown mode: {mode}")
 
             # Register hooks
-            # IMPORTANT: s hook must be registered BEFORE z hook
-            if hasattr(layer, 'transition_s'):
-                self.hooks.append(
-                    layer.transition_s.register_forward_hook(make_capture_s_hook(layer_idx))
-                )
+            self.hooks.append(
+                layer.register_forward_pre_hook(make_capture_s_pre_hook(layer_idx))
+            )
 
             if hasattr(layer, 'transition_z'):
                 self.hooks.append(
@@ -419,7 +419,7 @@ class SingleLayerPLTInsertion:
         plt_checkpoint: Path,
         layer_idx: int,
         device: str = 'cuda',
-        reconstruction_method: str = 'outer_sum'
+        reconstruction_method: str = 'broadcast_i'
     ):
         """
         Initialize single-layer PLT insertion.
@@ -462,9 +462,9 @@ class SingleLayerPLTInsertion:
 
         layer = model.pairformer_module.layers[self.layer_idx]
 
-        # Capture s hook
-        def capture_s_hook(module, input, output):
-            self.captured_s = output.detach().clone()
+        # Capture layer input s before transition_z runs.
+        def capture_s_pre_hook(module, input):
+            self.captured_s = input[0].detach().clone()
 
         # Z hook with optional replacement
         def z_hook(module, input, output):
@@ -489,7 +489,7 @@ class SingleLayerPLTInsertion:
             return output
 
         # Register
-        self.hooks.append(layer.transition_s.register_forward_hook(capture_s_hook))
+        self.hooks.append(layer.register_forward_pre_hook(capture_s_pre_hook))
         self.hooks.append(layer.transition_z.register_forward_hook(z_hook))
 
         print(f"  Registered hooks for layer {self.layer_idx} (replace={replace})")
