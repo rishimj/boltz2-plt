@@ -71,6 +71,94 @@ To encourage reproducibility and facilitate comparison with other models, on top
 
 If you're interested in retraining the model, currently for Boltz-1 but soon for Boltz-2, see our [training instructions](docs/training.md).
 
+## Per-Layer Transcoder (PLT) Training
+
+The **Per-Layer Transcoder (PLT)** is a sparse autoencoder framework for understanding and interpreting Boltz2's learned representations. It learns to encode and decode activations from individual Pairformer layers into interpretable sparse features.
+
+### What is PLT?
+
+PLT trains independent sparse autoencoders for different layers of Boltz2's Pairformer trunk:
+- **Sparse encoding**: Activations are encoded into a higher-dimensional space (2048 features) with TopK sparsity (only 16 features active per example)
+- **Interpretable features**: Discover what each layer learns (e.g., secondary structure patterns, contact predictions)
+- **Multi-layer analysis**: Train transcoders for layers 0, 8, 16, 24, 32, 40 to track feature evolution across network depth
+- **Reconstruction**: Decode sparse features back to original representations with high fidelity
+
+### Quick Start: PLT Training
+
+#### 1. Download Boltz2 Checkpoint
+
+```bash
+cd /usr/scratch/rmanimaran8/boltz
+wget https://model-gateway.boltz.bio/boltz2_conf.ckpt -O boltz2_checkpoint.ckpt
+```
+
+#### 2. Collect Activations
+
+For single-layer (layer 47/48):
+```bash
+cd transcoder
+python collection_scripts/collect_activations.py \
+    --checkpoint ../boltz2_checkpoint.ckpt \
+    --data-path /path/to/protein/data \
+    --output pilot_activations \
+    --layer 47
+```
+
+For multi-layer analysis:
+```bash
+python collection_scripts/collect_multi_layer.py \
+    --checkpoint ../boltz2_checkpoint.ckpt \
+    --data-path /path/to/protein/data \
+    --output multi_layer_activations \
+    --layers 0 8 16 24 32 40
+```
+
+#### 3. Train PLT Models
+
+```bash
+python universal_transcoder/train_online_multi_layer.py \
+    --activation-dir multi_layer_activations \
+    --checkpoint-dir multi_layer_checkpoints \
+    --epochs 100 \
+    --batch-size 32 \
+    --learning-rate 0.001
+```
+
+#### 4. Validate and Analyze Results
+
+```bash
+python validation_scripts/validate_multi_layer.py \
+    --checkpoint-dir multi_layer_checkpoints \
+    --activation-dir multi_layer_activations
+```
+
+### PLT Architecture
+
+**Per Transcoder:**
+- **Input**: Activations from Pairformer layer (single representation: 384-dim, pair representation: 128-dim)
+- **Encoding**: Linear layer mapping to 2048-dimensional hidden space
+- **Sparsity**: TopK selection keeping only top 16 active features
+- **Decoding**: Linear layer mapping back to original dimension
+- **Constraints**: Unit-norm decoder weights, dead neuron resurrection, learned bias terms
+
+**Key Metrics:**
+- **Reconstruction R²**: How well decoded activations match originals
+- **Mean Sparsity**: Average number of active features per example
+- **Dead Neurons**: Features that never activate (tracked and resurrected)
+
+### Documentation
+
+For detailed information about PLT training, architecture, and analysis:
+
+- [PLT Architecture Guide](transcoder/documentation/PLT_ARCHITECTURE_GUIDE.md): Mathematical formulation and design
+- [Multi-Layer PLT Guide](transcoder/documentation/MULTI_LAYER_PLT_GUIDE.md): Training pipeline for multiple layers
+- [PLT Quickstart](transcoder/documentation/QUICKSTART.md): Step-by-step setup and testing
+
+### Presentation
+
+For an overview of the PLT project, methodology, and preliminary results:
+- [PLT Presentation](https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000)
+
 
 ## Contributing
 
