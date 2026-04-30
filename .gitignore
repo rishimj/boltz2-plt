@@ -169,6 +169,7 @@ boltz_env/
 
 # Cache directories
 .boltz_cache/
+.nv/
 
 # Test outputs
 test_output/
@@ -201,6 +202,8 @@ transcoder/minimal_test/
 transcoder/overnight_runs/
 transcoder/logs/
 transcoder/pid_files/
+transcoder/**/*.status
+transcoder/**/__pycache__/
 transcoder/universal_transcoder/data/
 transcoder/multi_layer_10p_activations/
 transcoder/old_experiments/

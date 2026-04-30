@@ -40,11 +40,15 @@ Trained on 100 synthetic samples (5 batches × 20 samples each) from a 117-resid
 3. **Sparsity**: Achieved ~49% sparsity (half of latents active)
 4. **L1 Regularization**: Stable at ~1.06-1.10
 
-### Model Files
+### Historical Pilot Artifacts
 
-- **transcoder_final.pt** (8.1 MB): Final trained model
-- **pilot_model/step_000025.pt** (25 MB): Checkpoint with optimizer state
-- **training_log.txt**: Detailed training metrics
+The original pilot produced:
+
+- `transcoder_final.pt`: final trained model
+- `pilot_model/step_000025.pt`: checkpoint with optimizer state
+- `training_log.txt`: detailed training metrics
+
+Those pilot artifacts are no longer kept in the repository root as active project outputs after the April 30, 2026 cleanup.
 
 ## Implementation Details
 
@@ -98,24 +102,18 @@ device = "cuda"
    - Compare s vs z latent usage
    - Ablation studies
 
-## Files Created
+## Files Created Historically
 
 ```
-transcoder/
-├── model.py                          # JointTranscoder implementation
-├── collect_activations.py            # Activation extraction (needs fix)
-├── train.py                          # Training pipeline ✓
-├── create_synthetic_activations.py   # Test data generator ✓
-├── transcoder_final.pt               # Trained model (8.1 MB) ✓
-├── pilot_activations_synthetic/      # Synthetic test data ✓
-│   ├── batch_00000.npz
-│   ├── batch_00001.npz
-│   ├── batch_00002.npz
-│   ├── batch_00003.npz
-│   └── batch_00004.npz
-├── pilot_model/                      # Training checkpoints ✓
-│   └── step_000025.pt
-└── training_log.txt                  # Training metrics ✓
+pilot implementation:
+├── model.py
+├── collect_activations.py
+├── train.py
+├── create_synthetic_activations.py
+├── transcoder_final.pt
+├── pilot_activations_synthetic/
+├── pilot_model/
+└── training_log.txt
 ```
 
 ## Usage
