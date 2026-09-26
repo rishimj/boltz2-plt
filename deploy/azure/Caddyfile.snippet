@@ -1,0 +1,15 @@
+# ---- Boltz2 PLT (appended by deploy/azure/install.sh) ----
+__SITE_HOST__ {
+	root * /srv/boltz2-plt/www
+	encode gzip
+	file_server
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	@page path / /index.html
+	header @page Cache-Control "no-cache"
+}
+# ---- end Boltz2 PLT ----
