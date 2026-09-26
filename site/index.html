@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boltz2 PLT Explorer</title>
+<meta name="description" content="Per-Layer Transcoders: sparse autoencoders that reveal interpretable features inside the Boltz2 protein structure prediction model. Interactive demo.">
+<meta property="og:title" content="Boltz2 PLT Explorer">
+<meta property="og:description" content="Sparse, human-readable features inside a protein structure prediction model, layer by layer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230b5d56'/><path d='M8 24c4-2 4-6 8-8s4-6 8-8' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M8 8c4 2 4 6 8 8s4 6 8 8' stroke='%239fe0d2' stroke-width='2.4' fill='none' stroke-linecap='round'/></svg>">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#f6f5f1; --surface:#ffffff; --surface-2:#fbfaf7; --sunk:#f1efe9;
+  --ink:#12201e; --ink-2:#3c4a47; --muted:#5f6c69; --faint:#8b9693;
+  --line:#e4e1d8; --line-2:#d3cfc3;
+  --brand:#0b5d56; --brand-2:#0e9c86; --brand-tint:#e4f1ed; --brand-ink:#083f3a;
+  --helix:#c2386b; --strand:#d99a16; --coil:#aab4b9;
+  --fam-chem:#c9771a; --fam-ss:#0e9c86; --fam-fold:#4b4fb3; --fam-pos:#8b979b;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --sans:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:14px; --shadow:0 1px 2px rgba(18,32,30,.05),0 8px 28px -12px rgba(18,32,30,.14);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:var(--brand);text-decoration:none;text-underline-offset:3px}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.9em;background:var(--sunk);padding:1px 5px;border-radius:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:30;background:rgba(246,245,241,.86);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;height:62px;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:600;letter-spacing:-.005em}
+.brand:hover{text-decoration:none}
+.brand svg{width:30px;height:30px;flex-shrink:0}
+.brand small{display:block;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.02em;margin-top:-3px}
+.navlinks{display:flex;gap:26px;margin-left:auto;align-items:center;font-size:14px}
+.navlinks a{color:var(--ink-2)}
+.navlinks a:hover{color:var(--brand);text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 18px;border-radius:10px;font:600 14px var(--sans);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s,transform .15s;white-space:nowrap}
+.btn:hover{border-color:var(--brand);text-decoration:none}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-ink)}
+.btn.small{height:34px;padding:0 12px;font-size:13px}
+.btn:disabled{opacity:.6;cursor:progress}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+
+/* hero */
+.hero{padding:64px 0 0;position:relative}
+.hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center}
+.kicker{display:inline-flex;align-items:center;gap:10px;font:600 12px var(--sans);letter-spacing:.09em;text-transform:uppercase;color:var(--brand)}
+.kicker:before{content:"";width:22px;height:2px;background:var(--brand-2);border-radius:2px}
+h1{font:600 clamp(38px,5vw,62px)/1.04 var(--serif);letter-spacing:-.022em;margin:18px 0 20px}
+h1 em{font-style:italic;color:var(--brand)}
+.lede{font-size:clamp(16px,1.5vw,18.5px);color:var(--ink-2);max-width:560px;margin:0 0 30px}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.byline{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:30px;font-size:13px;color:var(--muted)}
+.byline b{color:var(--ink);font-weight:600}
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.fig-stage{position:relative;aspect-ratio:1/0.92;background:radial-gradient(closest-side at 50% 48%,#ffffff 0%,#f7f8f6 62%,#eef1ee 100%)}
+.fig-stage canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.fig-stage canvas:active{cursor:grabbing}
+.fig-cap{padding:14px 18px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.5}
+.fig-cap b{color:var(--ink);font-weight:600}
+.stage-hint{position:absolute;left:14px;bottom:12px;font:500 11px var(--sans);color:var(--faint);display:flex;align-items:center;gap:6px;pointer-events:none}
+.stage-legend{position:absolute;right:14px;top:12px;display:flex;align-items:center;gap:8px;font:500 11px var(--sans);color:var(--muted);background:rgba(255,255,255,.85);padding:6px 10px;border-radius:8px;border:1px solid var(--line)}
+.ramp{width:84px;height:8px;border-radius:4px;background:linear-gradient(90deg,#cdd6d9,#a7d4c9,#4fae9c,#16806f,#0a4d45)}
+
+.ticker{margin-top:64px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface-2);overflow:hidden;white-space:nowrap;padding:11px 0;font:500 13px var(--mono);letter-spacing:.18em;color:var(--faint)}
+.ticker .track{display:inline-block;animation:tick 90s linear infinite}
+.ticker i{font-style:normal}
+.ticker .hp{color:#a77a14}.ticker .pos{color:#2f6fd0}.ticker .neg{color:#c23a4d}.ticker .pol{color:#1f8a7d}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.ticker .track{animation:none}}
+
+/* sections */
+section{padding:88px 0}
+.sec-head{display:grid;grid-template-columns:1fr 1.3fr;gap:48px;align-items:end;margin-bottom:36px}
+.sec-head .kicker{margin-bottom:12px}
+h2{font:600 clamp(28px,3.4vw,40px)/1.12 var(--serif);letter-spacing:-.015em;margin:0}
+.sec-head p{margin:0;color:var(--ink-2);font-size:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.stat{padding:22px 24px}
+.stat+.stat{border-left:1px solid var(--line)}
+.stat b{display:block;font:600 30px/1.1 var(--serif);letter-spacing:-.01em}
+.stat span{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+
+/* method figure */
+.method{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 28px 8px;box-shadow:var(--shadow)}
+.method .svgwrap{overflow-x:auto}
+.method svg{display:block;width:100%;min-width:760px;height:auto}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:18px;padding:22px 0 20px;border-top:1px solid var(--line)}
+.steps h4{margin:0 0 6px;font:600 16px var(--sans);display:flex;gap:10px;align-items:baseline}
+.steps h4 span{font:600 12px var(--mono);color:var(--brand)}
+.steps p{margin:0;font-size:14px;color:var(--ink-2)}
+
+/* explorer */
+.app{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.app-bar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.app-bar .t{font:600 13px var(--sans);display:flex;align-items:center;gap:8px}
+.app-bar .t svg{width:16px;height:16px;color:var(--brand)}
+.app-bar .path{font:12px var(--mono);color:var(--faint)}
+.chip-sim{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:500 11.5px var(--sans);color:#8a5a0b;background:#fbf3e2;border:1px solid #efd9a8;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.chip-sim svg{width:13px;height:13px}
+.ctrl{display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,1.5fr) auto;gap:24px;padding:20px;border-bottom:1px solid var(--line);align-items:end}
+.lab{display:block;font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.select{position:relative}
+.select select{appearance:none;-webkit-appearance:none;width:100%;height:42px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);padding:0 36px 0 12px;font:500 14px var(--sans);color:var(--ink);cursor:pointer}
+.select:after{content:"";position:absolute;right:14px;top:17px;width:7px;height:7px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(45deg);pointer-events:none}
+.ruler{position:relative;height:42px}
+.ruler .rail{position:absolute;left:10px;right:10px;top:20px;height:2px;background:var(--line-2);border-radius:2px}
+.ruler .ticks{position:absolute;left:10px;right:10px;top:15px;height:12px;background:repeating-linear-gradient(90deg,var(--line-2) 0 1px,transparent 1px calc(100%/47))}
+.ruler button{position:absolute;top:8px;transform:translateX(-50%);min-width:34px;height:26px;padding:0 6px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface);font:500 12px var(--mono);color:var(--ink-2);cursor:pointer;transition:.15s}
+.ruler button:hover{border-color:var(--brand-2)}
+.ruler button.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 0 0 4px var(--brand-tint)}
+.ruler .ends{position:absolute;left:10px;right:10px;top:36px;display:flex;justify-content:space-between;font:10px var(--mono);color:var(--faint)}
+details.custom{grid-column:1/-1;margin-top:-6px}
+details.custom summary{cursor:pointer;font-size:13px;color:var(--brand);font-weight:500;list-style:none;display:inline-flex;align-items:center;gap:6px}
+details.custom summary::-webkit-details-marker{display:none}
+details.custom summary:before{content:"+";font:600 14px var(--mono)}
+details.custom[open] summary:before{content:"\2212"}
+details.custom textarea{margin-top:10px;width:100%;height:70px;border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;font:12px/1.5 var(--mono);color:var(--ink);background:var(--surface-2);resize:vertical}
+
+.run-strip{display:flex;align-items:center;gap:22px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap;position:relative}
+.stepper{display:flex;align-items:center;gap:0;flex:1;min-width:0;overflow-x:auto}
+.step{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--faint);white-space:nowrap}
+.step .d{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;background:var(--surface);flex-shrink:0;transition:.2s}
+.step .d svg{width:11px;height:11px;opacity:0;color:#fff}
+.step.active{color:var(--ink)}
+.step.active .d{border-color:var(--brand-2);box-shadow:0 0 0 4px var(--brand-tint)}
+.step.done{color:var(--ink-2)}
+.step.done .d{background:var(--brand-2);border-color:var(--brand-2)}
+.step.done .d svg{opacity:1}
+.step+.step:before{content:"";width:22px;height:1.5px;background:var(--line-2);margin:0 10px}
+.status{font:12px var(--mono);color:var(--muted);white-space:nowrap}
+.status b{color:var(--brand);font-weight:500}
+.pbar{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--brand-2);transition:width .3s}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.kpi{padding:16px 20px}
+.kpi+.kpi{border-left:1px solid var(--line)}
+.kpi b{display:block;font:500 22px/1.2 var(--mono);letter-spacing:-.02em}
+.kpi span{font-size:12px;color:var(--muted)}
+
+.main{display:grid;grid-template-columns:1.25fr 1fr;border-bottom:1px solid var(--line)}
+.pane{padding:20px;min-width:0}
+.pane+.pane{border-left:1px solid var(--line)}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:12px;min-height:30px}
+.ph h3{margin:0;font:600 14px var(--sans)}
+.ph .meta{font:11.5px var(--mono);color:var(--faint)}
+.ph .right{margin-left:auto}
+.seg{display:inline-flex;background:var(--sunk);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;font:500 12px var(--sans);color:var(--muted);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.viewer{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;aspect-ratio:1/0.86;background:radial-gradient(closest-side at 50% 48%,#ffffff 0%,#f7f8f6 62%,#eef1ee 100%)}
+.viewer canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:pan-y}
+.viewer canvas:active{cursor:grabbing}
+.vtools{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.vtools button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.9);cursor:pointer;display:grid;place-items:center;color:var(--ink-2)}
+.vtools button:hover{border-color:var(--brand-2)}
+.vtools button.on{color:var(--brand);border-color:var(--brand-2)}
+.vtools svg{width:15px;height:15px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:12px;color:var(--muted);align-items:center;min-height:20px}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font:11.5px/1.45 var(--mono);padding:6px 9px;border-radius:7px;white-space:nowrap;z-index:10;display:none;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tip .m{color:#9fb3ae}
+
+.flist{display:flex;flex-direction:column;max-height:300px;overflow:auto;margin:0 -8px;padding:0 8px}
+.frow{display:grid;grid-template-columns:10px 52px minmax(0,1fr) 58px;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer;border:1px solid transparent;text-align:left;background:none;width:100%;color:inherit;font:inherit}
+.frow:hover{background:var(--surface-2)}
+.frow.on{background:var(--brand-tint);border-color:#c7e3dc}
+.dot{width:9px;height:9px;border-radius:50%}
+.frow .id{font:11.5px var(--mono);color:var(--muted)}
+.frow .nm{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frow.poly .nm{color:var(--faint);font-style:italic}
+.frow .val{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font:11.5px var(--mono);color:var(--ink-2)}
+.frow .val i{display:block;height:3px;border-radius:2px;background:var(--brand-2);align-self:stretch;margin-left:auto}
+.fcard{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface-2)}
+.fcard .fam{display:inline-flex;align-items:center;gap:7px;font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fcard h4{margin:6px 0 4px;font:600 20px/1.25 var(--serif);letter-spacing:-.01em}
+.fcard h4 span{font:500 13px var(--mono);color:var(--brand);margin-left:6px;letter-spacing:0}
+.fcard p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.fstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 12px}
+.fstats div{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.fstats b{display:block;font:500 15px var(--mono)}
+.fstats span{font-size:11px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:500 11.5px var(--mono);padding:3px 8px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.chips button:hover{border-color:var(--brand-2);color:var(--brand)}
+.chips .lbl{font-size:11.5px;color:var(--muted);align-self:center;margin-right:2px}
+
+.seqpane{padding:20px;border-bottom:1px solid var(--line)}
+.seqv{display:flex;flex-wrap:wrap;gap:12px 14px;font:12.5px var(--mono);user-select:none}
+.blk{display:flex;flex-direction:column}
+.blk .n{font-size:10px;color:var(--faint);height:14px;padding-left:1px}
+.blk .ss,.blk .aa{display:flex}
+.blk .ss span{width:15px;height:9px;display:block;position:relative}
+.blk .ss .C:after{content:"";position:absolute;left:0;right:0;top:4px;height:1.5px;background:var(--coil)}
+.blk .ss .H{background:var(--helix);background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.28) 0 3px,transparent 3px 7px)}
+.blk .ss .H.s{border-radius:5px 0 0 5px}.blk .ss .H.e{border-radius:0 5px 5px 0}.blk .ss .H.s.e{border-radius:5px}
+.blk .ss .E{background:var(--strand);height:7px;margin-top:1px}
+.blk .ss .E.e{clip-path:polygon(0 -40%,100% 50%,0 140%);height:11px;margin-top:-1px;background:var(--strand)}
+.blk .aa span{width:15px;height:22px;display:grid;place-items:center;margin-top:3px;cursor:pointer;color:var(--ink);border-radius:3px;transition:box-shadow .1s}
+.blk .aa span.hl{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.seqinfo{font:12px var(--mono);color:var(--muted);min-height:20px;margin:-4px 0 12px}
+.seqinfo b{color:var(--ink);font-weight:500}
+
+.lower{display:grid;grid-template-columns:1.1fr 1fr 1fr}
+.lower .pane{border-top:0}
+.mapwrap{position:relative;padding:0 0 18px 26px}
+.mapwrap canvas{width:100%;aspect-ratio:1;display:block;border-radius:4px;image-rendering:pixelated;border:1px solid var(--line)}
+.axis-l,.axis-b{position:absolute;font:10px var(--mono);color:var(--faint)}
+.axis-l{left:0;top:0;bottom:18px;width:24px}
+.axis-b{left:26px;right:0;bottom:0;height:16px}
+.axis-l span{position:absolute;right:4px;transform:translateY(-50%)}
+.axis-b span{position:absolute;transform:translateX(-50%)}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.note{font-size:12.5px;color:var(--muted);padding:14px 20px;background:var(--surface-2);display:flex;gap:10px;align-items:flex-start}
+.note svg{width:16px;height:16px;flex-shrink:0;margin-top:2px;color:#b07a12}
+
+/* families */
+.fams{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.famcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+.famcard .top{display:flex;align-items:center;gap:8px;font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.famcard h3{font:600 22px/1.2 var(--serif);margin:10px 0 8px;letter-spacing:-.01em}
+.famcard p{margin:0 0 16px;font-size:14px;color:var(--ink-2)}
+.famcard svg{display:block;width:100%;height:auto}
+.famcard .ex{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.famcard .ex span{font:11.5px var(--mono);padding:3px 8px;border-radius:6px;background:var(--sunk);color:var(--ink-2)}
+
+/* code + cite */
+.two{display:grid;grid-template-columns:1.25fr 1fr;gap:24px}
+.codecard{background:#0f1f1d;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.codecard .hd{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #1f3431;font:12px var(--mono);color:#86a09b}
+.codecard .hd button{margin-left:auto;background:#1a2f2c;border:1px solid #2a4541;color:#cfe3de;font:11px var(--mono);padding:4px 10px;border-radius:6px;cursor:pointer}
+.codecard pre{margin:0;padding:18px 20px;overflow:auto;font:12.5px/1.75 var(--mono);color:#d7e6e2}
+.codecard .c{color:#6f8a85}.codecard .k{color:#7fd6c2}.codecard .s{color:#f0c47a}
+.cite{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.cite .hd{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--muted)}
+.cite .hd button{margin-left:auto;background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink-2);font:11px var(--mono);padding:4px 10px;border-radius:6px;cursor:pointer}
+.cite pre{margin:0;padding:18px 20px;font:12.5px/1.7 var(--mono);color:var(--ink-2);overflow:auto;flex:1}
+.cite .links{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px}
+
+footer{border-top:1px solid var(--line);padding:36px 0 56px;font-size:13.5px;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:14px 32px;align-items:center}
+footer .links{margin-left:auto;display:flex;gap:22px;flex-wrap:wrap}
+
+@media (max-width:1020px){
+  .hero-grid{grid-template-columns:1fr;gap:40px}
+  .sec-head{grid-template-columns:1fr;gap:14px}
+  .main{grid-template-columns:1fr}
+  .main .pane+.pane{border-left:0;border-top:1px solid var(--line)}
+  .lower{grid-template-columns:1fr 1fr}
+  .lower .pane:first-child{grid-column:1/-1}
+  .lower .pane+.pane{border-left:0;border-top:1px solid var(--line)}
+  .lower .pane:last-child{border-left:1px solid var(--line)}
+  .fams{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr;gap:18px}
+}
+@media (max-width:720px){
+  .wrap{padding:0 16px}
+  .navlinks a.hide-s{display:none}
+  .hero{padding-top:40px}
+  section{padding:64px 0}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat:nth-child(3){border-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--line)}
+  .ctrl{grid-template-columns:1fr;gap:18px}
+  .ctrl .btn{width:100%}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(3){border-left:0}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line)}
+  .lower{grid-template-columns:1fr}
+  .lower .pane:last-child{border-left:0}
+  .pane,.seqpane{padding:16px}
+  .ph{flex-wrap:wrap}
+  .ph .right{margin-left:0}
+  .method{padding:18px 16px 4px}
+  .app-bar .path{display:none}
+  .fig-stage{aspect-ratio:1}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Boltz2 PLT home">
+      <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0b5d56"/><path d="M8 24c4-2 4-6 8-8s4-6 8-8" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M8 8c4 2 4 6 8 8s4 6 8 8" stroke="#9fe0d2" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+      <span>Boltz2 PLT<small>Per-Layer Transcoders</small></span>
+    </a>
+    <div class="navlinks">
+      <a class="hide-s" href="#method">Method</a>
+      <a class="hide-s" href="#explorer">Explorer</a>
+      <a class="hide-s" href="#reproduce">Reproduce</a>
+      <a class="btn small" href="https://github.com/rishimj/boltz2-plt#readme">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 23.5 12C23.5 5.7 18.3.5 12 .5z"/></svg>GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="kicker">Interpretability for structural biology</span>
+      <h1>What does a protein folding model <em>actually</em> learn?</h1>
+      <p class="lede">Per-Layer Transcoders (PLT) are sparse autoencoders trained inside Boltz2, a state-of-the-art biomolecular structure predictor. They decompose each Pairformer layer into 2,048 sparse features, so helices, buried cores and long-range contacts become things you can point to.</p>
+      <div class="cta">
+        <a class="btn primary" href="#explorer"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Open the explorer</a>
+        <a class="btn" href="https://github.com/rishimj/boltz2-plt#readme">Read the README</a>
+        <a class="btn" href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000">Slides</a>
+      </div>
+      <div class="byline"><span><b>Rishi Manimaran</b></span><span>2026</span><span>PyTorch &middot; Lightning &middot; Boltz2</span><span>MIT License</span></div>
+    </div>
+    <figure class="fig" style="margin:0">
+      <div class="fig-stage" id="heroStage">
+        <canvas id="heroCanvas" aria-label="Rotating 3D backbone of an example protein colored by feature activation"></canvas>
+        <div class="stage-legend"><span>low</span><span class="ramp"></span><span>high</span></div>
+        <div class="stage-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Drag to rotate</div>
+        <div class="tip" id="heroTip"></div>
+      </div>
+      <figcaption class="fig-cap"><b>Fig. 1</b> &nbsp;Backbone model of example protein G colored by activation of feature <span style="font-family:var(--mono)">#0412</span> (&alpha;-helix periodicity) at Pairformer block 24. Rendering is illustrative.</figcaption>
+    </figure>
+  </div>
+  <div class="ticker" aria-hidden="true"><div class="track" id="ticker"></div></div>
+</header>
+
+<section id="method">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Method</span><h2>A sparse lens on every depth of the trunk</h2></div>
+      <p>Boltz2's Pairformer refines a per-residue single representation and a residue-pair representation across 48 blocks. PLT hooks six of those blocks and learns an overcomplete, sparse dictionary for each one, reconstructing the pair signal from only 16 active features per residue.</p>
+    </div>
+
+    <div class="stats" style="margin-bottom:28px">
+      <div class="stat"><b>6</b><span>Pairformer blocks transcoded: 0, 8, 16, 24, 32, 40</span></div>
+      <div class="stat"><b>384 &rarr; 2,048</b><span>Single representation to sparse dictionary</span></div>
+      <div class="stat"><b>k = 16</b><span>Active features per residue (0.78%)</span></div>
+      <div class="stat"><b>128</b><span>Pair-representation channels decoded</span></div>
+    </div>
+
+    <div class="method">
+      <div class="svgwrap">
+      <svg viewBox="0 0 1100 330" role="img" aria-label="Figure 2: PLT method. A protein sequence flows through Boltz2's 48-block Pairformer; six blocks are hooked, and each hooked single representation is encoded into 2048 latents, sparsified to the top 16, and decoded into the pair representation.">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1L9 5L0 9z" fill="#8b9693"/></marker>
+        </defs>
+        <g font-family="Inter, sans-serif" fill="#12201e">
+          <text x="0" y="16" font-size="12" font-weight="700" fill="#0b5d56">a</text>
+          <text x="16" y="16" font-size="12" font-weight="600">Sequence</text>
+          <rect x="0" y="30" width="150" height="96" rx="10" fill="#fbfaf7" stroke="#e4e1d8"/>
+          <text x="14" y="58" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="#3c4a47">MKTVKIAATG</text>
+          <text x="14" y="78" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="#3c4a47">ADGKIGFAIA</text>
+          <text x="14" y="98" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.5" fill="#3c4a47">EALKATQGMV</text>
+          <text x="14" y="116" font-family="JetBrains Mono, monospace" font-size="12" fill="#8b9693">&#8230; L residues</text>
+
+          <text x="196" y="16" font-size="12" font-weight="700" fill="#0b5d56">b</text>
+          <text x="212" y="16" font-size="12" font-weight="600">Boltz2 Pairformer trunk (48 blocks)</text>
+          <g id="trunk"></g>
+
+          <text x="820" y="16" font-size="12" font-weight="700" fill="#0b5d56">c</text>
+          <text x="836" y="16" font-size="12" font-weight="600">Predicted structure</text>
+          <rect x="820" y="30" width="280" height="96" rx="10" fill="#fbfaf7" stroke="#e4e1d8"/>
+          <g id="thumb"></g>
+
+          <text x="790" y="186" font-size="12" font-weight="700" fill="#0b5d56">d</text>
+          <text x="806" y="186" font-size="12" font-weight="600">Per-Layer Transcoder, one per hooked block</text>
+          <rect x="196" y="200" width="904" height="126" rx="12" fill="#fbfaf7" stroke="#e4e1d8"/>
+
+          <g font-family="JetBrains Mono, monospace" font-size="11.5">
+            <rect x="216" y="226" width="110" height="74" rx="8" fill="#fff" stroke="#d3cfc3"/>
+            <text x="271" y="256" text-anchor="middle" fill="#12201e">s<tspan font-size="8" dy="3">&#8467;</tspan><tspan dy="-3"> &#8712; &#8477;</tspan><tspan font-size="8" dy="-5">L&#215;384</tspan></text>
+            <text x="271" y="278" text-anchor="middle" fill="#5f6c69" font-family="Inter, system-ui, sans-serif" font-size="11">normalize</text>
+
+            <path d="M368 238 L452 216 L452 310 L368 288 Z" fill="#e4f1ed" stroke="#0e9c86"/>
+            <text x="410" y="258" text-anchor="middle" fill="#0b5d56" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600">Encoder</text>
+            <text x="410" y="276" text-anchor="middle" fill="#3c4a47">W_enc</text>
+
+            <rect x="492" y="214" width="236" height="98" rx="8" fill="#fff" stroke="#d3cfc3"/>
+            <g id="latents"></g>
+            <text x="610" y="306" text-anchor="middle" fill="#5f6c69" font-family="Inter, system-ui, sans-serif" font-size="11">TopK: 16 of 2,048 latents active</text>
+
+            <path d="M770 216 L854 238 L854 288 L770 310 Z" fill="#e4f1ed" stroke="#0e9c86"/>
+            <text x="812" y="258" text-anchor="middle" fill="#0b5d56" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600">Decoder</text>
+            <text x="812" y="276" text-anchor="middle" fill="#3c4a47">unit-norm</text>
+
+            <g id="minimap"></g>
+            <text x="1010" y="226" text-anchor="middle" fill="#12201e">&#7825;<tspan font-size="8" dy="3">&#8467;</tspan><tspan dy="-3"> &#8712; &#8477;</tspan><tspan font-size="8" dy="-5">L&#215;L&#215;128</tspan></text>
+          </g>
+        </g>
+        <g stroke="#8b9693" stroke-width="1.4" fill="none" marker-end="url(#arr)">
+          <path d="M150 78 H188"/>
+          <path d="M766 78 H812"/>
+          <path d="M326 263 H362"/><path d="M452 263 H486"/><path d="M728 263 H764"/><path d="M854 263 H920"/>
+        </g>
+        <path id="hookline" d="" stroke="#0e9c86" stroke-width="1.4" fill="none" stroke-dasharray="3 3"/>
+      </svg>
+      </div>
+      <div class="steps">
+        <div><h4><span>01</span>Hook the trunk</h4><p>Forward hooks on six Pairformer blocks capture the single representation <code>s</code> and the pair representation <code>z</code> while Boltz2 predicts real protein structures.</p></div>
+        <div><h4><span>02</span>Learn a sparse dictionary</h4><p>Each transcoder encodes 384-d activations into 2,048 latents and keeps the top 16. Unit-norm decoder columns and dead-feature resurrection keep the dictionary healthy.</p></div>
+        <div><h4><span>03</span>Name the features</h4><p>Because only a handful of latents fire per residue, each can be traced to sequence motifs, secondary structure or tertiary contacts, and followed across depth.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="explorer" style="padding-top:24px">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Interactive explorer</span><h2>Watch features light up on a protein</h2></div>
+      <p>Choose one of the ten benchmark chains from <code>examples/multi_protein_split</code>, pick a Pairformer block, and run the transcoder. Select a feature to see where it fires in 3D, along the sequence and in the pair representation.</p>
+    </div>
+
+    <div class="app">
+      <div class="app-bar">
+        <span class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="7" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M7.5 9l3.5 6M16.5 9l-3.5 6M8.5 7h7"/></svg>PLT Explorer</span>
+        <span class="path">transcoder/overnight_runs/&hellip;/layer_<span id="pathLayer">16</span>/model.pt</span>
+        <span class="chip-sim" title="Runs entirely in your browser. Structures, activations and metrics are simulated from sequence properties to illustrate the workflow. The training and validation code is in the repository."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>In-browser demo &middot; simulated outputs</span>
+      </div>
+
+      <div class="ctrl">
+        <div>
+          <label class="lab" for="protein">Protein chain</label>
+          <div class="select"><select id="protein"></select></div>
+        </div>
+        <div>
+          <span class="lab">Pairformer block</span>
+          <div class="ruler" id="ruler"><div class="rail"></div><div class="ticks"></div><div class="ends"><span>0</span><span>47</span></div></div>
+        </div>
+        <button class="btn primary" id="run"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Run transcoder</button>
+        <details class="custom" id="customBox">
+          <summary>Paste your own sequence</summary>
+          <textarea id="seq" spellcheck="false" placeholder="One-letter amino-acid sequence, 20 to 500 residues"></textarea>
+        </details>
+      </div>
+
+      <div class="run-strip">
+        <div class="stepper" id="stepper"></div>
+        <div class="status" id="status">ready</div>
+        <div class="pbar" id="pbar"></div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><b id="k-len">&ndash;</b><span>Residues (L)</span></div>
+        <div class="kpi"><b id="k-r2">&ndash;</b><span>Reconstruction R&sup2; of z</span></div>
+        <div class="kpi"><b id="k-l0">&ndash;</b><span>Mean active features / residue</span></div>
+        <div class="kpi"><b id="k-alive">&ndash;</b><span>Live dictionary features</span></div>
+      </div>
+
+      <div class="main">
+        <div class="pane">
+          <div class="ph">
+            <h3>Structure</h3><span class="meta" id="ssMeta"></span>
+            <div class="right seg" id="colorMode">
+              <button data-m="feature" class="on">Feature</button>
+              <button data-m="ss">Sec. structure</button>
+              <button data-m="chem">Chemistry</button>
+            </div>
+          </div>
+          <div class="viewer" id="stage">
+            <canvas id="viewCanvas" aria-label="Interactive 3D backbone. Drag to rotate, hover a residue for details."></canvas>
+            <div class="stage-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Drag to rotate &middot; hover residues</div>
+            <div class="vtools">
+              <button id="spinBtn" class="on" title="Auto-rotate" aria-label="Toggle auto-rotate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></button>
+              <button id="resetBtn" title="Reset view" aria-label="Reset view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/><circle cx="12" cy="12" r="8"/></svg></button>
+            </div>
+            <div class="tip" id="viewTip"></div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="pane">
+          <div class="ph"><h3>Active features</h3><span class="meta" id="featMeta"></span></div>
+          <div class="flist" id="flist"></div>
+          <div class="fcard" id="fcard"></div>
+        </div>
+      </div>
+
+      <div class="seqpane">
+        <div class="ph"><h3>Sequence</h3><span class="meta">secondary structure track &middot; residues shaded by current color mode</span></div>
+        <div class="seqinfo" id="seqinfo">Hover a residue to see its strongest latents.</div>
+        <div class="seqv" id="seqv"></div>
+      </div>
+
+      <div class="lower">
+        <div class="pane">
+          <div class="ph">
+            <h3>Pair map</h3>
+            <div class="right seg" id="mapMode">
+              <button data-m="target" class="on">Boltz2</button>
+              <button data-m="recon">PLT</button>
+              <button data-m="resid">Residual</button>
+              <button data-m="feat">Feature</button>
+            </div>
+          </div>
+          <div class="mapwrap" id="mapwrap">
+            <div class="axis-l" id="axisL"></div>
+            <canvas id="map" width="200" height="200" aria-label="Residue by residue pair map"></canvas>
+            <div class="axis-b" id="axisB"></div>
+            <div class="tip" id="mapTip"></div>
+          </div>
+          <div class="legend"><span>0</span><span class="ramp" style="background:linear-gradient(90deg,#ffffff,#a7d4c9,#4fae9c,#16806f,#0a4d45)"></span><span>1</span><span style="margin-left:auto" id="mapCap"></span></div>
+        </div>
+        <div class="pane">
+          <div class="ph"><h3>Selected feature across depth</h3></div>
+          <div class="chart" id="depthChart"></div>
+          <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Mean activation of the selected feature on this protein at each hooked block.</p>
+        </div>
+        <div class="pane">
+          <div class="ph"><h3>Reconstruction by depth</h3></div>
+          <div class="chart" id="r2Chart"></div>
+          <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Deeper blocks carry more global fold information and are harder to compress into 16 features.</p>
+        </div>
+      </div>
+
+      <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>This explorer runs entirely in your browser to illustrate the workflow. Backbone models, activations and metrics are generated from sequence properties, not from a live Boltz2 forward pass. The real pipeline (activation hooks, online multi-layer training, validation) is in the <a href="https://github.com/rishimj/boltz2-plt#readme">repository</a>.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="families" style="padding-top:24px">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Feature families</span><h2>From chemistry to fold, block by block</h2></div>
+      <p>The explorer's dictionary groups features by what they respond to. Tracking where each family peaks makes the trunk's division of labor visible: local chemistry first, secondary structure in the middle, three-dimensional organization last.</p>
+    </div>
+    <div class="fams" id="fams"></div>
+  </div>
+</section>
+
+<section id="reproduce" style="padding-top:24px">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Reproduce</span><h2>Train the transcoders yourself</h2></div>
+      <p>Training streams activations straight from Boltz2 predictions, so there is no giant activation dump to manage. You need a CUDA GPU (24 GB+ recommended) and the Boltz2 checkpoint. See the <a href="https://github.com/rishimj/boltz2-plt/tree/main/transcoder/documentation">technical documentation</a> for the full pipeline.</p>
+    </div>
+    <div class="two">
+      <div class="codecard">
+        <div class="hd">terminal<button id="copyCode">Copy</button></div>
+<pre id="code"><span class="c"># clone and install</span>
+<span class="k">git</span> clone https://github.com/rishimj/boltz2-plt.git && cd boltz2-plt
+<span class="k">pip</span> install boltz[cuda] -U torch pytorch-lightning einops einx
+<span class="k">wget</span> https://model-gateway.boltz.bio/boltz2_conf.ckpt -O boltz2_checkpoint.ckpt
+
+<span class="c"># train six per-layer transcoders on streamed activations</span>
+cd transcoder
+<span class="k">python</span> universal_transcoder/train_online_multi_layer.py \
+    --fasta-dir ../examples/multi_protein_split \
+    --checkpoint-dir ./trained_plt_checkpoints \
+    --layers <span class="s">0 8 16 24 32 40</span> --epochs <span class="s">20</span> \
+    --batch-size <span class="s">10</span> --learning-rate <span class="s">0.001</span> --seed <span class="s">42</span>
+
+<span class="c"># reconstruction R&sup2;, sparsity and dead features per layer</span>
+<span class="k">python</span> validation_scripts/validate_multi_layer.py \
+    --checkpoint-dir ./trained_plt_checkpoints \
+    --fasta-dir ../examples/multi_protein_split \
+    --layers <span class="s">0 8 16 24 32 40</span></pre>
+      </div>
+      <div class="cite">
+        <div class="hd">cite this work<button id="copyCite">Copy BibTeX</button></div>
+<pre id="bib">@misc{plt_sparse_autoencoders,
+  title  = {Per-Layer Transcoder: Sparse
+            Autoencoders for Biomolecular
+            Structure Prediction
+            Interpretability},
+  author = {Manimaran, Rishi},
+  year   = {2026},
+  url    = {https://github.com/rishimj/boltz2-plt}
+}</pre>
+        <div class="links">
+          <a class="btn small primary" href="https://github.com/rishimj/boltz2-plt#readme">README</a>
+          <a class="btn small" href="https://github.com/rishimj/boltz2-plt/tree/main/transcoder/documentation">Docs</a>
+          <a class="btn small" href="https://doi.org/10.1101/2025.06.14.659707">Boltz-2 paper</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; 2026 Rishi Manimaran &middot; MIT License</span>
+    <span>Built on <a href="https://github.com/jwohlwend/boltz">Boltz2</a> (Passaro et al., 2025)</span>
+    <div class="links">
+      <a href="https://github.com/rishimj/boltz2-plt">GitHub</a>
+      <a href="https://github.com/rishimj/boltz2-plt#readme">README</a>
+      <a href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000">Slides</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+/* ------------------------------------------------------------------ data */
+const PROTEINS = {
+  A:"QLEDSEVEAVAKGLEEMYANGVTEDNFKNYVKNNFAQQEISSVEEELNVNISDSCVANKIKDEFFAMISISAIVKAAQKKAWKELAVTVLRFAKANGLKTNAIIVAGQLALWAVQCG",
+  B:"MVTPEGNVSLVDESLLVGVTDEDRAVRSAHQFYERLIGLWAPAVMEAAHELGVFAALAEAPADSGELARRLDCDARAMRVLLDALYAYDVIDRIHDTNGFRYLLSAEARECLLPGTLFSLVGKFMHDINVAWPAWRNLAEVVRHGARDTSGAESPNGIAQEDYESLVGGINFWAPPIVTTLSRKLRASGRSGDATASVLDVGCGTGLYSQLLLREFPRWTATGLDVERIATLANAQALRLGVEERFATRAGDFWRGGWGTGYDLVLFANIFHLQTPASAVRLMRHAAACLAPDGLVAVVDQIVDADREPKTPQDRFALLFAASMTNTGGGDAYTFQEYEEWFTAAGLQRIETLDTPMHRILLARRATEPSAVPEGQASENLYFQ",
+  C:"MAHHHHHHVAVDAVSFTLLQDQLQSVLDTLSEREAGVVRLRFGLTDGQPRTLDEIGQVYGVTRERIRQIESKTMSKLRHPSRSQVLRDYLDGSSGSGTPEERLLRAIFGEKA",
+  D:"MRYAFAAEATTCNAFWRNVDMTVTALYEVPLGVCTQDPDRWTTTPDDEAKTLCRACPRRWLCARDAVESAGAEGLWAGVVIPESGRARAFALGQLRSLAERNGYPVRDHRVSAQSA",
+  E:"MAEAFKQIAEKFAAFKQIAEKFAAFKQIAEKFAAFKQIAEKFAAFKQIAEKFAAFKQIAEKFAAFKQIAEKFAAFKQIAE",
+  F:"MKVKVGVNGFGRIGRLVTRAAFNSGKVDVVAINDPFIDLNYMVYMFQYDSTHGKFHGTVKAENGKLVINGKAITIFQERDPANIKWGD",
+  G:"MKTVKIAATGADGKIGFAIAEALKATQGMVNAIYEAAVERAKGLPGKVLCINGDGAVDAAAGAIAGGKAADALASAEKLGFKILGVNKDDAEIEKVAR",
+  H:"MGSSHHHHHHSSGLVPRGSHMKYLLPTAAAGLLLLAAQPAMAQVQLVQSGAEVKKPG",
+  I:"MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIHKEGLRKGR",
+  J:"MKKLLILTCLVAVALARPKHPIKHQGLPQEVLNENLLRFFATTFYQHLADSKNDNDNIFLSPLSISTALAFLSLGAHNTTLTEILKGLKFNKALAAANKHKPLKAFNKLVKDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYACEVTHQGLSSPVTKSFNRGEC"
+};
+const DESC = {A:"mixed α/β",B:"large α/β domain",C:"His-tagged, helical",D:"cysteine-rich",E:"designed helical repeat",F:"β-rich, Rossmann-like",G:"α/β, flavodoxin-like",H:"His-tag + Ig N-terminus",I:"multi-domain",J:"signal peptide + Ig domain"};
+const LAYERS = [0,8,16,24,32,40];
+const THREE = {A:"Ala",R:"Arg",N:"Asn",D:"Asp",C:"Cys",Q:"Gln",E:"Glu",G:"Gly",H:"His",I:"Ile",L:"Leu",K:"Lys",M:"Met",F:"Phe",P:"Pro",S:"Ser",T:"Thr",W:"Trp",Y:"Tyr",V:"Val"};
+const KD = {A:1.8,R:-4.5,N:-3.5,D:-3.5,C:2.5,Q:-3.5,E:-3.5,G:-0.4,H:-3.2,I:4.5,L:3.8,K:-3.9,M:1.9,F:2.8,P:-1.6,S:-0.8,T:-0.7,W:-0.9,Y:-1.3,V:4.2};
+const HELIX = {A:1.42,R:.98,N:.67,D:1.01,C:.7,Q:1.11,E:1.51,G:.57,H:1,I:1.08,L:1.21,K:1.16,M:1.45,F:1.13,P:.57,S:.77,T:.83,W:1.08,Y:.69,V:1.06};
+const BETA = {A:.83,R:.93,N:.89,D:.54,C:1.19,Q:1.1,E:.37,G:.75,H:.87,I:1.6,L:1.3,K:.74,M:1.05,F:1.38,P:.55,S:.75,T:1.19,W:1.37,Y:1.47,V:1.7};
+
+const CHEM = [
+  {k:"hp", name:"Hydrophobic", set:"AVILMFW", c:"#c8961c"},
+  {k:"pol",name:"Polar",       set:"STNQCY",  c:"#2a9d8f"},
+  {k:"pos",name:"Positive",    set:"KRH",     c:"#2f6fd0"},
+  {k:"neg",name:"Negative",    set:"DE",      c:"#d2475a"},
+  {k:"gp", name:"Gly / Pro",   set:"GP",      c:"#9aa5ab"},
+];
+const chemOf = c => CHEM.find(x=>x.set.includes(c)) || CHEM[4];
+const SSC = {H:"#c2386b", E:"#d99a16", C:"#aab4b9"};
+const SSN = {H:"helix", E:"strand", C:"coil"};
+const FAM = {
+  chem:{name:"Sequence & chemistry", c:"#c9771a"},
+  ss:  {name:"Secondary structure",  c:"#0e9c86"},
+  fold:{name:"Fold & contacts",      c:"#4b4fb3"},
+  pos: {name:"Positional",           c:"#8b979b"},
+  poly:{name:"Unlabeled",            c:"#c3cbcf"},
+};
+
+/* ------------------------------------------------------------- helpers */
+function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const smooth=(arr,w)=>arr.map((_,i)=>{let s=0,n=0;for(let j=i-w;j<=i+w;j++)if(j>=0&&j<arr.length){s+=arr[j];n++}return s/n});
+const norm01=a=>{let mn=Infinity,mx=-Infinity;for(const v of a){if(v<mn)mn=v;if(v>mx)mx=v}return a.map(v=>mx-mn<1e-9?0:(v-mn)/(mx-mn))};
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const rgb=c=>`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+const pad4=n=>String(n).padStart(4,"0");
+const esc=s=>String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+const V={
+  add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  mul:(a,k)=>[a[0]*k,a[1]*k,a[2]*k], dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  len:a=>Math.hypot(a[0],a[1],a[2]), norm:a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]}
+};
+function basis(u){const a=Math.abs(u[0])<.9?[1,0,0]:[0,1,0];const e1=V.norm(V.cross(u,a));return[e1,V.cross(u,e1)]}
+
+// sequential ramp (single hue, light to dark); used for activations and maps
+const RAMP=["#e9eeed","#a7d4c9","#4fae9c","#16806f","#0a4d45"].map(hex2rgb);
+const MAPRAMP=["#ffffff","#a7d4c9","#4fae9c","#16806f","#0a4d45"].map(hex2rgb);
+function ramp(t,stops=RAMP){t=clamp(t);const x=t*(stops.length-1),i=Math.min(stops.length-2,Math.floor(x));return mix(stops[i],stops[i+1],x-i)}
+const NEUTRAL=hex2rgb("#cdd6d9");
+
+/* --------------------------------------------- secondary structure + 3D */
+function assignSS(s){
+  const L=s.length;
+  const hx=smooth(s.map(c=>HELIX[c]||1),3), bt=smooth(s.map(c=>BETA[c]||1),2);
+  let ss=s.map((c,i)=>(hx[i]>1.05&&hx[i]>=bt[i]-.04)?"H":(bt[i]>1.1?"E":"C"));
+  ss=ss.map((x,i)=>(s[i]==="P"&&x==="H"&&ss[i-1]==="H")?"C":x);
+  const runs=[];let st=0;
+  for(let i=1;i<=L;i++)if(i===L||ss[i]!==ss[st]){runs.push({t:ss[st],a:st,b:i-1});st=i}
+  for(const r of runs){
+    const n=r.b-r.a+1;
+    if((r.t==="H"&&n<5)||(r.t==="E"&&n<3)){for(let i=r.a;i<=r.b;i++)ss[i]="C";continue}
+    if(r.t==="E"&&n>9){for(let i=r.a+9;i<=r.b;i++)ss[i]="C"}
+    if(r.t==="H"&&n>24){const parts=Math.ceil(n/19),len=n/parts;for(let p=1;p<parts;p++){const k=Math.round(r.a+p*len);ss[k-1]="C";ss[k]="C";ss[k+1]="C"}}
+  }
+  // termini are usually disordered
+  for(let i=0;i<Math.min(2,L);i++){ss[i]="C";ss[L-1-i]="C"}
+  const segs=[];st=0;
+  for(let i=1;i<=L;i++)if(i===L||ss[i]!==ss[st]){if(ss[st]!=="C")segs.push({t:ss[st],a:st,b:i-1});st=i}
+  // drop fragments that became too short after splitting
+  for(const g of segs)if(g.b-g.a+1<(g.t==="H"?5:3))for(let i=g.a;i<=g.b;i++)ss[i]="C";
+  return {ss,segs:segs.filter(g=>g.b-g.a+1>=(g.t==="H"?5:3))};
+}
+
+function buildCoords(s,segs,rand){
+  const L=s.length, X=new Array(L).fill(null), disp=new Array(L).fill(null);
+  const spacing=(a,b)=>a==="E"&&b==="E"?4.8:(a==="H"&&b==="H"?9.8:8.6);
+  const placed=[];
+  segs.forEach((g,k)=>{
+    if(!placed.length){placed.push({x:0,y:0,t:g.t});return}
+    const prev=placed[placed.length-1];
+    const cx=placed.reduce((a,p)=>a+p.x,0)/placed.length, cy=placed.reduce((a,p)=>a+p.y,0)/placed.length;
+    let best=null,bs=Infinity;
+    for(const p of placed)for(let a=0;a<12;a++){
+      const ang=a*Math.PI/6+rand()*.25, d=spacing(p.t,g.t);
+      const x=p.x+d*Math.cos(ang), y=p.y+d*Math.sin(ang);
+      if(placed.some(q=>Math.hypot(q.x-x,q.y-y)<spacing(q.t,g.t)-.6))continue;
+      const sc=Math.hypot(x-cx,y-cy)+(g.t==="E"&&prev.t==="E"?3:.7)*Math.hypot(x-prev.x,y-prev.y);
+      if(sc<bs){bs=sc;best={x,y}}
+    }
+    placed.push({...(best||{x:prev.x+10,y:prev.y}),t:g.t});
+  });
+  const axes=segs.map((g,k)=>{
+    const dir=k%2?-1:1, tilt=g.t==="H"?.32:.12;
+    const u=V.norm([(rand()-.5)*tilt*2,(rand()-.5)*tilt*2,dir]);
+    const c=[placed[k].x,placed[k].y,(rand()-.5)*4];
+    const rise=g.t==="H"?1.5:3.3, n=g.b-g.a+1, len=(n-1)*rise;
+    const [e1,e2]=basis(u), ph=rand()*6.28;
+    for(let i=0;i<n;i++){
+      const t=-len/2+i*rise;
+      let p=V.add(c,V.mul(u,t));disp[g.a+i]=p;
+      if(g.t==="H"){const th=i*1.745+ph;p=V.add(p,V.add(V.mul(e1,2.3*Math.cos(th)),V.mul(e2,2.3*Math.sin(th))))}
+      else p=V.add(p,V.mul(e1,i%2?.85:-.85));
+      X[g.a+i]=p;
+    }
+    return {u,c};
+  });
+  const C=[0,0,0];
+  if(placed.length){C[0]=placed.reduce((a,p)=>a+p.x,0)/placed.length;C[1]=placed.reduce((a,p)=>a+p.y,0)/placed.length}
+  // connecting loops (cubic Bezier arching over the ends of antiparallel elements)
+  for(let k=0;k+1<segs.length;k++){
+    const A=segs[k],B=segs[k+1],m=B.a-A.b-1;if(m<=0)continue;
+    const pA=disp[A.b],pB=disp[B.a],uA=axes[k].u,uB=axes[k+1].u;
+    const mid=V.mul(V.add(pA,pB),.5);
+    let out=[mid[0]-C[0],mid[1]-C[1],0];out=V.len(out)<.1?[1,0,0]:V.norm(out);
+    const ext=3+Math.min(m,14)*.9, bulge=Math.min(m,20)*.45;
+    const c1=V.add(V.add(pA,V.mul(uA,ext)),V.mul(out,bulge));
+    const c2=V.add(V.sub(pB,V.mul(uB,ext)),V.mul(out,bulge));
+    const [e1]=basis(V.norm(V.sub(pB,pA)));
+    for(let j=0;j<m;j++){
+      const t=(j+1)/(m+1),it=1-t;
+      let p=V.add(V.add(V.mul(pA,it*it*it),V.mul(c1,3*it*it*t)),V.add(V.mul(c2,3*it*t*t),V.mul(pB,t*t*t)));
+      if(m>6)p=V.add(p,V.mul(e1,Math.sin(t*Math.PI*Math.max(1,m/7))*1.6));
+      X[A.b+1+j]=disp[A.b+1+j]=V.add(p,[(rand()-.5)*.8,(rand()-.5)*.8,(rand()-.5)*.8]);
+    }
+  }
+  // termini: persistent random walk heading away from the core
+  const tail=(from,to,step,u)=>{
+    let p=disp[from],d=u,n=0;
+    for(let i=from+step;step>0?i<=to:i>=to;i+=step){
+      const out=V.norm([p[0]-C[0]+.01,p[1]-C[1],0]);
+      d=V.norm(V.add(V.add(d,V.mul(out,n<3?.3:-.12)),[(rand()-.5)*1.1,(rand()-.5)*1.1,(rand()-.5)*1.1]));
+      p=V.add(V.add(p,V.mul(d,3.3)),V.mul(V.sub(p,[C[0],C[1],0]),n>3?-.06:0));X[i]=disp[i]=p;n++;
+    }
+  };
+  if(segs.length){
+    tail(segs[0].a,0,-1,V.mul(axes[0].u,-1));
+    tail(segs[segs.length-1].b,L-1,1,axes[axes.length-1].u);
+  }else{
+    let p=[0,0,0],d=[1,0,0];
+    for(let i=0;i<L;i++){d=V.norm(V.add(d,[(rand()-.5)*1.4,(rand()-.5)*1.4,(rand()-.5)*1.4]));p=V.add(V.add(p,V.mul(d,3.6)),V.mul(p,-.07));X[i]=disp[i]=p}
+  }
+  // centre
+  const cen=X.reduce((a,p)=>V.add(a,p),[0,0,0]).map(v=>v/L);
+  return {X:X.map(p=>V.sub(p,cen)),disp:disp.map(p=>V.sub(p,cen))};
+}
+
+const cache=new Map();
+function analyze(seq){
+  if(cache.has(seq))return cache.get(seq);
+  const s=[...seq],L=s.length,rand=rng(hash(seq));
+  const {ss,segs}=assignSS(s);
+  const {X,disp}=buildCoords(s,segs,rand);
+  const D=new Float32Array(L*L),P=new Float32Array(L*L);
+  const burial=new Array(L).fill(0),hub=new Array(L).fill(0);
+  for(let i=0;i<L;i++)for(let j=i;j<L;j++){
+    const d=V.len(V.sub(X[i],X[j]));
+    const v=clamp(.88/(1+Math.exp((d-8)/1.3))+.14*Math.exp(-d/16));
+    D[i*L+j]=D[j*L+i]=d;P[i*L+j]=P[j*L+i]=i===j?1:v;
+    if(i!==j){if(d<10){burial[i]++;burial[j]++}if(d<8&&j-i>12){hub[i]++;hub[j]++}}
+  }
+  // tandem repeats
+  const repeat=new Array(L).fill(0);let bestP=0,bestS=0;
+  for(let p=5;p<=14;p++){let m=0;for(let i=0;i+p<L;i++)if(s[i]===s[i+p])m++;const sc=m/Math.max(1,L-p);if(sc>bestS){bestS=sc;bestP=p}}
+  if(bestS>.2)for(let i=0;i<L;i++){let m=0,n=0;for(let k=-bestP;k<=bestP;k++){const j=i+k;if(j>=0&&j+bestP<L){n++;if(s[j]===s[j+bestP])m++}}repeat[i]=n?Math.max(0,m/n-.15)*1.6:0}
+  // amphipathic helix moment
+  const amph=s.map((_,i)=>{if(ss[i]!=="H")return 0;let x=0,y=0;for(let k=-5;k<=5;k++){const j=i+k;if(j<0||j>=L)continue;const a=j*100*Math.PI/180;x+=(KD[s[j]]||0)*Math.cos(a);y+=(KD[s[j]]||0)*Math.sin(a)}return Math.hypot(x,y)/14});
+  const ctx={s,L,ss,segs,X,disp,D,P,burial:norm01(burial),hub:norm01(smooth(hub,1)),repeat,amph,repeatPeriod:bestS>.2?bestP:0};
+  cache.set(seq,ctx);
+  return ctx;
+}
+
+/* ------------------------------------------------------ feature dictionary */
+const inSet=set=>c=>set.includes(c)?1:0;
+const FEATURES=[
+  {id:412, fam:"ss",  depth:22,width:15,name:"α-helix periodicity (i, i+3/i+4)",
+   desc:"Fires along helical segments. Its decoder column writes a strong i±3 / i±4 signal into the pair representation, the fingerprint of an α-helix.",
+   f:(s,c)=>smooth(s.map((a,i)=>c.ss[i]==="H"?.6+(HELIX[a]-1)*.9:0),1)},
+  {id:1650,fam:"ss",  depth:24,width:14,name:"β-strand register",
+   desc:"Active on β-strands and strongest where hydrophobic and polar residues alternate. Co-fires with antiparallel pairing bands in z.",
+   f:(s,c)=>smooth(s.map((a,i)=>c.ss[i]==="E"?.6+(BETA[a]-1)*.8:0),1)},
+  {id:731, fam:"ss",  depth:16,width:14,name:"Loop / turn (Gly, Pro, Asn, Asp)",
+   desc:"Marks connecting loops between secondary-structure elements, anchored on turn-forming residues.",
+   f:(s,c)=>smooth(s.map((a,i)=>c.ss[i]==="C"?.3+("GPND".includes(a)?.55:0):0),1)},
+  {id:1109,fam:"ss",  depth:18,width:12,name:"Helix N-cap (Ser, Thr, Asp, Asn)",
+   desc:"Sits one residue before a helix starts, on classic capping residues that satisfy the first backbone NH groups.",
+   f:(s,c)=>s.map((a,i)=>c.ss[i]!=="H"&&c.ss[i+1]==="H"?("STDN".includes(a)?1.1:.45):(c.ss[i]!=="H"&&c.ss[i+2]==="H"?.25:0))},
+  {id:150, fam:"ss",  depth:14,width:12,name:"Proline kink / helix breaker",
+   desc:"Localized on prolines, especially at the ends of helices where they terminate the i→i+4 hydrogen-bond ladder.",
+   f:s=>s.map((a,i)=>a==="P"?1:(s[i-1]==="P"||s[i+1]==="P")?.3:0)},
+  {id:1187,fam:"fold",depth:34,width:13,name:"Buried hydrophobic core",
+   desc:"Tracks hydrophobic residues with many spatial neighbours. Grows with depth as the trunk commits to a fold.",
+   f:(s,c)=>s.map((a,i)=>c.burial[i]*clamp(((KD[a]||0)+1.5)/6)*1.3)},
+  {id:1333,fam:"fold",depth:40,width:11,name:"Long-range contact hub",
+   desc:"Highest on residues that contact many partners more than 12 positions away in sequence. Nearly silent in early blocks.",
+   f:(s,c)=>c.hub},
+  {id:840, fam:"fold",depth:30,width:12,name:"Amphipathic helix face",
+   desc:"Helical residues whose hydrophobic moment points toward the core: one face packs, the other faces solvent.",
+   f:(s,c)=>c.amph},
+  {id:1520,fam:"fold",depth:32,width:14,name:"Solvent-exposed polar surface",
+   desc:"Polar and charged residues with few spatial neighbours: the protein's outer surface.",
+   f:(s,c)=>s.map((a,i)=>(1-c.burial[i])*("DEKRNQSTH".includes(a)?.9:.15))},
+  {id:93,  fam:"chem",depth:0, width:13,name:"Poly-His tag",
+   desc:"A chemistry-level detector for runs of histidine, typical of purification tags. Strong at block 0, fades as structure emerges.",
+   f:s=>s.map((a,i)=>{let r=0;for(let j=i-3;j<=i+3;j++)if(s[j]==="H")r++;return r>=3?r/4:0})},
+  {id:1422,fam:"chem",depth:6, width:16,name:"Cysteine / disulfide candidate",
+   desc:"Localized on cysteines and their immediate neighbours. Pairs of these residues are candidates for disulfide bonds.",
+   f:s=>s.map((a,i)=>{let r=0;for(let j=i-2;j<=i+2;j++)if(s[j]==="C")r+=j===i?1.1:.35;return r})},
+  {id:268, fam:"chem",depth:6, width:16,name:"Basic patch (Lys / Arg)",
+   desc:"Clusters of positively charged residues; a common signature of nucleic-acid or membrane binding surfaces.",
+   f:s=>smooth(s.map(inSet("KR")),3).map(v=>Math.max(0,v-.2)*2.2)},
+  {id:955, fam:"chem",depth:6, width:16,name:"Acidic patch (Asp / Glu)",
+   desc:"Clusters of negatively charged residues, often on exposed loops and helix N-termini.",
+   f:s=>smooth(s.map(inSet("DE")),3).map(v=>Math.max(0,v-.2)*2.2)},
+  {id:577, fam:"chem",depth:8, width:13,name:"Aromatic ring (Phe / Trp / Tyr)",
+   desc:"Aromatic side chains. In deeper blocks it co-fires with the core feature as rings pack together.",
+   f:s=>smooth(s.map(inSet("FWY")),1).map(v=>v*1.3)},
+  {id:1266,fam:"chem",depth:6, width:15,name:"Signal-peptide hydrophobic stretch",
+   desc:"A hydrophobic run within the first ~25 residues, the classic secretion-signal signature.",
+   f:s=>{const k=smooth(s.map(c=>KD[c]||0),3);return k.map((v,i)=>i<28?Math.max(0,v-1)*.6:0)}},
+  {id:1804,fam:"chem",depth:14,width:18,name:"Tandem sequence repeat",
+   desc:"Detects short-period repeats. Its decoder writes off-diagonal stripes at the repeat period into z.",
+   f:(s,c)=>c.repeat},
+  {id:19,  fam:"pos", depth:0, width:24,name:"Chain terminus",
+   desc:"Distance-to-terminus signal present at every depth; a positional feature rather than a structural one.",
+   f:s=>s.map((_,i)=>Math.max(0,1-Math.min(i,s.length-1-i)/6))},
+  {id:1999,fam:"pos", depth:0, width:30,name:"Relative position encoding",
+   desc:"A slow sinusoid over residue index that is active on nearly every token.",
+   f:s=>s.map((_,i)=>.12+.08*Math.sin(i/9))},
+];
+const POLY=[201,388,640,702,915,1044,1377,1459,1512,1588,1721,1873,1930,2011,54];
+const depthGain=(f,l)=>{const d=(l-f.depth)/f.width;return Math.exp(-d*d)};
+const R2BASE={0:.93,8:.9,16:.87,24:.84,32:.81,40:.78};
+
+function runModel(seq,layer){
+  const ctx=analyze(seq),{L}=ctx,r=rng(hash(seq+"|"+layer));
+  const feats=FEATURES.map(f=>{
+    const g=depthGain(f,layer);
+    return {...f,acts:f.f(ctx.s,ctx).map(v=>Math.max(0,v)*g*(.9+.2*r()))};
+  });
+  for(const id of POLY){
+    const rr=rng(hash(seq)+id*7919+layer);
+    const centers=[...Array(1+Math.floor(rr()*3))].map(()=>Math.floor(rr()*L));
+    const amp=.05+rr()*.2,w=2+rr()*6;
+    feats.push({id,fam:"poly",poly:true,depth:layer,width:10,name:"Unlabeled latent",
+      desc:"No clean human-readable label yet. Its top-activating residues span unrelated contexts, typical of a polysemantic or not-yet-converged latent.",
+      acts:ctx.s.map((_,i)=>centers.reduce((a,c)=>a+amp*Math.exp(-((i-c)**2)/(2*w*w)),0))});
+  }
+  const K=16;
+  for(let i=0;i<L;i++){
+    const vals=feats.map(f=>f.acts[i]).sort((a,b)=>b-a),thr=vals[K-1]||0;let n=0;
+    for(const f of feats){if(f.acts[i]<thr||f.acts[i]<=1e-4||n>=K)f.acts[i]=0;else n++}
+  }
+  for(const f of feats){f.mean=f.acts.reduce((a,b)=>a+b,0)/L;f.max=Math.max(...f.acts);f.freq=f.acts.filter(v=>v>0).length/L;f.peak=f.acts.indexOf(f.max)}
+  feats.sort((a,b)=>b.mean-a.mean);
+  const r2=R2BASE[layer]+(r()-.5)*.03-Math.min(.04,L/10000);
+  return {ctx,feats,r2,alive:Math.round(2048*(.69+.04*r())),layer,seq};
+}
+function r2Series(seq,L){const r=rng(hash(seq));return LAYERS.map(l=>R2BASE[l]+(rng(hash(seq+"|"+l))()-.5)*.03-Math.min(.04,L/10000))}
+
+/* ------------------------------------------------------------ 3D viewer */
+class Viewer{
+  constructor(canvas,{tip,onHover,spin=true,pitch=-.35}={}){
+    this.cv=canvas;this.g=canvas.getContext("2d");this.tip=tip;this.onHover=onHover;
+    this.spin=spin;this.yaw=.6;this.pitch=pitch;this.pitch0=pitch;this.hl=-1;this.hover=-1;this.visible=true;this.zoom=1;
+    this.fog=hex2rgb("#f1f4f2");
+    this.ro=new ResizeObserver(()=>this.resize());this.ro.observe(canvas);
+    new IntersectionObserver(es=>{this.visible=es[0].isIntersecting}).observe(canvas);
+    let drag=null;
+    canvas.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};this.userT=performance.now();canvas.setPointerCapture(e.pointerId)});
+    canvas.addEventListener("pointermove",e=>{
+      if(drag){this.yaw+=(e.clientX-drag.x)*.01;this.pitch=clamp(this.pitch+(e.clientY-drag.y)*.01,-1.5,1.5);drag={x:e.clientX,y:e.clientY};this.userT=performance.now();this.hideTip();return}
+      this.pick(e);
+    });
+    canvas.addEventListener("pointerup",()=>{drag=null});
+    canvas.addEventListener("pointerleave",()=>{this.hover=-1;this.hideTip();this.onHover&&this.onHover(-1)});
+    this.loop=this.loop.bind(this);requestAnimationFrame(this.loop);
+  }
+  resize(){const r=this.cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);this.W=r.width;this.H=r.height;this.cv.width=Math.round(r.width*d);this.cv.height=Math.round(r.height*d);this.dpr=d;this.dirty=true}
+  set(ctx,colors){
+    this.ctx=ctx;this.colors=colors;const X=ctx.disp,L=ctx.L,S=5;
+    const rs=X.map(p=>V.len(p)).sort((a,b)=>a-b);this.rad=Math.max(12,rs[Math.floor(L*.94)]);
+    // Catmull-Rom spline through CA atoms
+    const pts=[],res=[];
+    for(let i=0;i<L-1;i++){
+      const p0=X[Math.max(0,i-1)],p1=X[i],p2=X[i+1],p3=X[Math.min(L-1,i+2)];
+      for(let k=0;k<S;k++){const t=k/S,t2=t*t,t3=t2*t;
+        pts.push([0,1,2].map(a=>.5*((2*p1[a])+(-p0[a]+p2[a])*t+(2*p0[a]-5*p1[a]+4*p2[a]-p3[a])*t2+(-p0[a]+3*p1[a]-3*p2[a]+p3[a])*t3)));
+        res.push(t<.5?i:i+1)}
+    }
+    pts.push(X[L-1]);res.push(L-1);
+    this.span=Array.from({length:L},()=>[Infinity,-Infinity]);
+    res.forEach((r,k)=>{const sp=this.span[r];sp[0]=Math.min(sp[0],k);sp[1]=Math.max(sp[1],k)});
+    for(let r=0;r<L-1;r++)this.span[r][1]=Math.min(pts.length-1,this.span[r][1]+1);
+    this.pts=pts;this.res=res;this.proj=new Float32Array(pts.length*3);this.caProj=new Float32Array(L*3);this.dirty=true;
+  }
+  setColors(c){this.colors=c;this.dirty=true}
+  setHighlight(i){this.hl=i;this.dirty=true}
+  reset(){this.yaw=.6;this.pitch=this.pitch0;this.dirty=true}
+  hideTip(){if(this.tip)this.tip.style.display="none"}
+  project(p,out,o,cy,sy,cx,sx,sc,cam){
+    const x1=p[0]*cy+p[2]*sy, z1=-p[0]*sy+p[2]*cy;
+    const y2=p[1]*cx-z1*sx, z2=p[1]*sx+z1*cx;
+    const f=cam/(cam-z2);
+    out[o]=this.W/2+x1*sc*f;out[o+1]=this.H/2+y2*sc*f;out[o+2]=z2;return f;
+  }
+  loop(t){
+    requestAnimationFrame(this.loop);
+    if(!this.ctx||!this.visible||!this.W)return;
+    const idle=!this.userT||t-this.userT>2500;
+    if(this.spin&&idle){this.yaw+=.0035;this.dirty=true}
+    if(!this.dirty)return;this.dirty=false;this.draw();
+  }
+  draw(){
+    const g=this.g,d=this.dpr,{W,H}=this;g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,W,H);
+    const cy=Math.cos(this.yaw),sy=Math.sin(this.yaw),cx=Math.cos(this.pitch),sx=Math.sin(this.pitch);
+    const sc=Math.min(W,H)*.43/this.rad*this.zoom, cam=this.rad*4.2;
+    const P=this.proj,pts=this.pts,res=this.res,ss=this.ctx.ss,N=pts.length;
+    const F=new Float32Array(N);
+    for(let i=0;i<N;i++)F[i]=this.project(pts[i],P,i*3,cy,sy,cx,sx,sc,cam);
+    const X=this.ctx.disp,CA=this.caProj;
+    for(let i=0;i<this.ctx.L;i++)this.project(X[i],CA,i*3,cy,sy,cx,sx,sc,cam);
+    let zmin=Infinity,zmax=-Infinity;for(let i=0;i<N;i++){const z=P[i*3+2];if(z<zmin)zmin=z;if(z>zmax)zmax=z}
+    const zr=zmax-zmin||1, Wd={H:4,E:2.6,C:1.05};
+    // one depth-sorted item per helix / strand (straight, so drawn as a unit) and per loop residue
+    const items=[];
+    const avgZ=(a,b)=>{let z=0;for(let k=a;k<=b;k++)z+=P[k*3+2];return z/(b-a+1)};
+    const avgF=(a,b)=>{let f=0;for(let k=a;k<=b;k++)f+=F[k];return f/(b-a+1)};
+    for(let r=0;r<this.ctx.L;r++){
+      const t=ss[r],seg=t==="C"?null:this.ctx.segs.find(g=>g.a===r);
+      if(t!=="C"&&!seg)continue;
+      // coil is grouped in short chunks: fewer visible joints, still sorts correctly around elements
+      let r1=r;if(seg)r1=seg.b;else{while(r1+1<this.ctx.L&&ss[r1+1]==="C"&&r1-r<3)r1++}
+      const r0=r;
+      const a=this.span[r0][0],b=this.span[r1][1];
+      const pieces=[];for(let q=r0;q<=r1;q++)pieces.push([q,this.span[q][0],this.span[q][1]]);
+      items.push({t,pieces,z:avgZ(a,b),w:Wd[t]*sc*avgF(a,b),seg});
+      r=r1;
+    }
+    items.sort((p,q)=>p.z-q.z);
+    g.lineCap="round";g.lineJoin="round";
+    const poly=(a,b,o=0)=>{g.beginPath();g.moveTo(P[a*3]+o,P[a*3+1]+o);for(let k=a+1;k<=b;k++)g.lineTo(P[k*3]+o,P[k*3+1]+o);g.stroke()};
+    for(const it of items){
+      const w=Math.max(1.5,it.w),fog=clamp((zmax-it.z)/zr)*.55;
+      const cols=it.pieces.map(([r])=>mix(this.colors[r],this.fog,fog));
+      g.lineWidth=w;it.pieces.forEach(([r,a,b],k)=>{g.strokeStyle=rgb(mix(cols[k],[20,30,28],.3));poly(a,b)});
+      g.lineWidth=w*.74;it.pieces.forEach(([r,a,b],k)=>{g.strokeStyle=rgb(cols[k]);poly(a,b)});
+      g.lineWidth=w*.26;it.pieces.forEach(([r,a,b],k)=>{g.strokeStyle=rgb(mix(cols[k],[255,255,255],.5));poly(a,b,-w*.16)});
+      if(it.t==="E"&&it.seg.b>it.seg.a){
+        const A=it.seg.b-1,B=it.seg.b,ax=CA[A*3],ay=CA[A*3+1],bx=CA[B*3],by=CA[B*3+1];
+        let dx=bx-ax,dy=by-ay;const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+        const hw=w*1.05,len=Math.max(w*1.5,6),c=cols[cols.length-1];
+        g.fillStyle=rgb(c);g.strokeStyle=rgb(mix(c,[20,30,28],.3));g.lineWidth=1.2;
+        g.beginPath();g.moveTo(bx+dy*hw,by-dx*hw);g.lineTo(bx+dx*len,by+dy*len);g.lineTo(bx-dy*hw,by+dx*hw);g.closePath();g.fill();g.stroke();
+      }
+    }
+    const mark=(i,strong)=>{
+      if(i<0||i>=this.ctx.L)return;const x=CA[i*3],y=CA[i*3+1];
+      g.lineWidth=2;g.strokeStyle=strong?"#12201e":"rgba(18,32,30,.55)";g.fillStyle="rgba(255,255,255,.35)";
+      g.beginPath();g.arc(x,y,strong?9:7,0,Math.PI*2);g.fill();g.stroke();
+    };
+    mark(this.hover,false);mark(this.hl,true);
+  }
+  pick(e){
+    if(!this.ctx)return;const r=this.cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    let best=-1,bd=14*14,bz=-Infinity;const CA=this.caProj;
+    for(let i=0;i<this.ctx.L;i++){const dx=CA[i*3]-mx,dy=CA[i*3+1]-my,dd=dx*dx+dy*dy;if(dd<bd||(dd<bd*1.4&&CA[i*3+2]>bz&&best>=0)){bd=Math.min(bd,dd);best=i;bz=CA[i*3+2]}}
+    if(best!==this.hover){this.hover=best;this.dirty=true;this.onHover&&this.onHover(best)}
+    if(this.tip){
+      if(best<0){this.hideTip();return}
+      const c=this.ctx,a=c.s[best];
+      this.tip.innerHTML=this.tipText?this.tipText(best):`${THREE[a]}${best+1} <span class="m">${SSN[c.ss[best]]}</span>`;
+      this.tip.style.display="block";
+      const tx=Math.min(mx+14,this.W-this.tip.offsetWidth-6);
+      this.tip.style.left=tx+"px";this.tip.style.top=(my+14)+"px";
+    }
+  }
+}
+
+/* ---------------------------------------------------------- color modes */
+function colorsFor(mode,res,feat){
+  const {ctx}=res;
+  if(mode==="ss")return ctx.ss.map(x=>hex2rgb(SSC[x]));
+  if(mode==="chem")return ctx.s.map(a=>hex2rgb(chemOf(a).c));
+  const m=feat.max||1;
+  return feat.acts.map(v=>v>0?ramp(.18+.82*v/m):NEUTRAL);
+}
+
+/* ------------------------------------------------------------------ UI */
+const $=id=>document.getElementById(id);
+const state={key:"G",layer:16,mode:"feature",map:"target",feat:null,res:null,lock:-1,running:false};
+
+// ticker
+(()=>{
+  const seq=PROTEINS.I+PROTEINS.A+PROTEINS.F;
+  const html=[...seq].map(c=>{const k=chemOf(c).k;return k==="gp"?c:`<i class="${k}">${c}</i>`}).join("");
+  $("ticker").innerHTML=html+html;
+})();
+
+// protein select
+const sel=$("protein");
+for(const k of Object.keys(PROTEINS)){const o=document.createElement("option");o.value=k;o.textContent=`Chain ${k} · ${PROTEINS[k].length} aa · ${DESC[k]}`;sel.appendChild(o)}
+const oc=document.createElement("option");oc.value="custom";oc.textContent="Custom sequence";sel.appendChild(oc);
+sel.value=state.key;
+$("seq").value=PROTEINS[state.key];
+sel.onchange=()=>{if(sel.value==="custom"){$("customBox").open=true;$("seq").focus()}else{$("seq").value=PROTEINS[sel.value];execute(false)}};
+$("seq").addEventListener("input",()=>{sel.value="custom"});
+
+// layer ruler
+const ruler=$("ruler");
+for(const l of LAYERS){
+  const b=document.createElement("button");b.textContent=l;b.style.left=`calc(10px + (100% - 20px) * ${l/47})`;
+  b.setAttribute("aria-label","Pairformer block "+l);
+  if(l===state.layer)b.classList.add("on");
+  b.onclick=()=>{state.layer=l;ruler.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));if(state.res)execute(true)};
+  ruler.appendChild(b);
+}
+
+// stepper
+const STEPS=["Sequence","Boltz2 trunk","Hook block","Sparse encode","Decode z"];
+$("stepper").innerHTML=STEPS.map(s=>`<div class="step"><span class="d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>${s}</div>`).join("");
+const stepEls=[...$("stepper").children];
+const setStep=(k)=>stepEls.forEach((el,i)=>{el.classList.toggle("done",i<k);el.classList.toggle("active",i===k)});
+
+const viewer=new Viewer($("viewCanvas"),{tip:$("viewTip"),onHover:i=>{if(state.lock<0)highlightSeq(i)}});
+viewer.tipText=i=>{
+  const r=state.res,c=r.ctx,a=c.s[i],f=state.feat;
+  return `<b>${THREE[a]} ${i+1}</b> <span class="m">· ${SSN[c.ss[i]]} · ${chemOf(a).name.toLowerCase()}</span><br>#${pad4(f.id)} activation <b>${f.acts[i].toFixed(3)}</b>`;
+};
+$("spinBtn").onclick=()=>{viewer.spin=!viewer.spin;$("spinBtn").classList.toggle("on",viewer.spin)};
+$("resetBtn").onclick=()=>viewer.reset();
+
+document.querySelectorAll("#colorMode button").forEach(b=>b.onclick=()=>{
+  state.mode=b.dataset.m;document.querySelectorAll("#colorMode button").forEach(x=>x.classList.toggle("on",x===b));paint();
+});
+document.querySelectorAll("#mapMode button").forEach(b=>b.onclick=()=>{
+  state.map=b.dataset.m;document.querySelectorAll("#mapMode button").forEach(x=>x.classList.toggle("on",x===b));drawMap();
+});
+
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function execute(quick){
+  if(state.running)return;
+  const seq=$("seq").value.toUpperCase().replace(/[^ACDEFGHIKLMNPQRSTVWY]/g,"");
+  const st=$("status");
+  if(seq.length<20){st.innerHTML='<b style="color:#b3261e">need at least 20 standard residues</b>';return}
+  if(seq.length>500){st.innerHTML='<b style="color:#b3261e">demo limit is 500 residues</b>';return}
+  state.running=true;$("run").disabled=true;
+  const pb=$("pbar");pb.style.width="0";
+  const plan=quick?[[3,`loading layer_${String(state.layer).padStart(2,"0")}/model.pt`,180],[4,"encode → TopK(16) → decode",220]]
+    :[[0,`tokenizing ${seq.length} residues`,260],[1,"Boltz2 forward pass (48 Pairformer blocks)",700],[2,`hook trunk.pairformer.layers[${state.layer}] → s [${seq.length}×384]`,380],[3,"encode 384 → 2048, keep top 16",360],[4,`decode ẑ [${seq.length}×${seq.length}×128]`,300]];
+  const t0=performance.now();
+  for(let n=0;n<plan.length;n++){
+    const [k,msg,ms]=plan[n];setStep(k);st.textContent=msg;pb.style.width=((n+1)/plan.length*100)+"%";await wait(ms);
+  }
+  setStep(5);
+  const res=runModel(seq,state.layer);
+  st.innerHTML=`done in ${((performance.now()-t0)/1000).toFixed(2)} s · R² <b>${res.r2.toFixed(3)}</b>`;
+  setTimeout(()=>{pb.style.width="0"},500);
+  const keep=state.feat&&res.feats.find(f=>f.id===state.feat.id&&f.mean>0);
+  const same=state.res&&state.res.seq===seq;
+  state.res=res;state.feat=keep||res.feats[0];
+  if(!same){state.lock=-1;viewer.set(res.ctx,colorsFor(state.mode,res,state.feat))}
+  $("pathLayer").textContent=String(state.layer).padStart(2,"0");
+  renderAll();
+  state.running=false;$("run").disabled=false;
+}
+$("run").onclick=()=>execute(false);
+
+function renderAll(){
+  const {ctx,r2,alive}=state.res;
+  $("k-len").textContent=ctx.L;
+  $("k-r2").textContent=r2.toFixed(3);
+  $("k-l0").textContent="16.0";
+  $("k-alive").textContent=alive.toLocaleString();
+  const nh=ctx.segs.filter(s=>s.t==="H").length,ne=ctx.segs.filter(s=>s.t==="E").length;
+  $("ssMeta").textContent=`${nh} helices · ${ne} strands`;
+  renderFeatures();paint();
+}
+
+function renderFeatures(){
+  const {feats}=state.res;
+  const shown=feats.filter(f=>f.mean>0).slice(0,20);
+  $("featMeta").textContent=`top ${shown.length} of 2,048 · block ${state.layer}`;
+  const mx=shown[0]?.mean||1;
+  $("flist").innerHTML=shown.map(f=>`<button class="frow${f.poly?" poly":""}${f.id===state.feat.id?" on":""}" data-id="${f.id}">
+    <span class="dot" style="background:${FAM[f.fam].c}"></span><span class="id">#${pad4(f.id)}</span>
+    <span class="nm">${esc(f.name)}</span><span class="val">${f.mean.toFixed(3)}<i style="width:${Math.max(4,f.mean/mx*100).toFixed(0)}%"></i></span></button>`).join("");
+  $("flist").querySelectorAll(".frow").forEach(b=>b.onclick=()=>{
+    state.feat=state.res.feats.find(f=>f.id===+b.dataset.id);
+    if(state.mode!=="feature"){state.mode="feature";document.querySelectorAll("#colorMode button").forEach(x=>x.classList.toggle("on",x.dataset.m==="feature"))}
+    $("flist").querySelectorAll(".frow").forEach(x=>x.classList.toggle("on",x===b));
+    paint();
+  });
+}
+
+function paint(){
+  const res=state.res,f=state.feat,ctx=res.ctx;
+  viewer.setColors(colorsFor(state.mode,res,f));
+  // legend
+  const lg=$("legend");
+  if(state.mode==="ss")lg.innerHTML=["H","E","C"].map(k=>`<span><span class="sw" style="background:${SSC[k]}"></span>${SSN[k][0].toUpperCase()+SSN[k].slice(1)}</span>`).join("");
+  else if(state.mode==="chem")lg.innerHTML=CHEM.map(c=>`<span><span class="sw" style="background:${c.c}"></span>${c.name}</span>`).join("");
+  else lg.innerHTML=`<span>#${pad4(f.id)} activation</span><span>0</span><span class="ramp"></span><span>${f.max.toFixed(2)}</span><span style="margin-left:6px"><span class="sw" style="background:#cdd6d9"></span>not in top-16</span>`;
+  renderCard();renderSeq();drawMap();drawDepth();drawR2();
+}
+
+function renderCard(){
+  const f=state.feat,ctx=state.res.ctx;
+  const top=f.acts.map((v,i)=>[v,i]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).slice(0,6);
+  const peakL=f.poly?state.layer:LAYERS.reduce((a,l)=>depthGain(f,l)>depthGain(f,a)?l:a,0);
+  $("fcard").innerHTML=`<span class="fam"><span class="dot" style="background:${FAM[f.fam].c}"></span>${FAM[f.fam].name}</span>
+    <h4>${esc(f.name)}<span>#${pad4(f.id)}</span></h4><p>${esc(f.desc)}</p>
+    <div class="fstats"><div><b>${(f.freq*100).toFixed(0)}%</b><span>of residues active</span></div><div><b>${f.max.toFixed(2)}</b><span>peak activation</span></div><div><b>${f.poly?"n/a":"block "+peakL}</b><span>strongest depth</span></div></div>
+    <div class="chips"><span class="lbl">Top residues</span>${top.map(([v,i])=>`<button data-i="${i}">${ctx.s[i]}${i+1}</button>`).join("")||'<span class="lbl">none</span>'}${ctx.repeatPeriod&&f.id===1804?`<span class="lbl" style="margin-left:6px">period ${ctx.repeatPeriod}</span>`:""}</div>`;
+  $("fcard").querySelectorAll(".chips button").forEach(b=>b.onclick=()=>lockRes(+b.dataset.i));
+}
+
+function lockRes(i){
+  state.lock=state.lock===i?-1:i;viewer.setHighlight(state.lock);highlightSeq(state.lock);
+}
+
+function renderSeq(){
+  const res=state.res,ctx=res.ctx,f=state.feat,m=f.max||1;
+  let html="";
+  for(let b=0;b<ctx.L;b+=10){
+    let ss="",aa="";
+    for(let i=b;i<Math.min(ctx.L,b+10);i++){
+      const t=ctx.ss[i],s=ctx.ss[i-1]!==t?" s":"",e=ctx.ss[i+1]!==t?" e":"";
+      ss+=`<span class="${t}${s}${e}"></span>`;
+      let bg,fg="";
+      if(state.mode==="feature"){const v=f.acts[i];bg=v>0?ramp(.18+.82*v/m):[241,239,233];if(v>0&&v/m>.55)fg="color:#fff;"}
+      else if(state.mode==="ss")bg=mix(hex2rgb(SSC[ctx.ss[i]]),[255,255,255],.72);
+      else bg=mix(hex2rgb(chemOf(ctx.s[i]).c),[255,255,255],.7);
+      aa+=`<span data-i="${i}" style="background:${rgb(bg)};${fg}">${ctx.s[i]}</span>`;
+    }
+    html+=`<div class="blk"><span class="n">${b+1}</span><div class="ss">${ss}</div><div class="aa">${aa}</div></div>`;
+  }
+  const el=$("seqv");el.innerHTML=html;
+  el.onmouseover=e=>{const t=e.target.closest("[data-i]");if(t&&state.lock<0){const i=+t.dataset.i;viewer.hover=i;viewer.dirty=true;highlightSeq(i)}};
+  el.onmouseleave=()=>{if(state.lock<0){viewer.hover=-1;viewer.dirty=true;highlightSeq(-1)}};
+  el.onclick=e=>{const t=e.target.closest("[data-i]");if(t)lockRes(+t.dataset.i)};
+  highlightSeq(state.lock);
+}
+
+function highlightSeq(i){
+  document.querySelectorAll("#seqv .hl").forEach(x=>x.classList.remove("hl"));
+  const info=$("seqinfo");
+  if(i<0||!state.res){info.innerHTML="Hover a residue to see its strongest latents. Click to pin it in 3D.";return}
+  const el=document.querySelector(`#seqv [data-i="${i}"]`);if(el)el.classList.add("hl");
+  const {feats,ctx}=state.res;
+  const tk=feats.map(f=>[f.acts[i],f]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]);
+  info.innerHTML=`<b>${THREE[ctx.s[i]]} ${i+1}</b> · ${SSN[ctx.ss[i]]} · ${tk.length} active: ${tk.slice(0,3).map(([v,f])=>`<span title="${esc(f.name)}">#${pad4(f.id)} ${esc(f.poly?"unlabeled":f.name.split(" (")[0])} ${v.toFixed(2)}</span>`).join(" · ")}${state.lock===i?' · <span style="color:var(--brand)">pinned</span>':""}`;
+}
+
+/* ------------------------------------------------------------ pair map */
+function drawMap(){
+  const res=state.res;if(!res)return;
+  const {ctx,r2}=res,{L,P}=ctx,f=state.feat,fm=f.max||1;
+  const cv=$("map"),g=cv.getContext("2d");cv.width=L;cv.height=L;
+  const img=g.createImageData(L,L),r=rng(hash(res.seq+state.layer)),noise=(1-r2);
+  const recon=new Float32Array(L*L);
+  for(let i=0;i<L;i++)for(let j=i;j<L;j++){const v=clamp(P[i*L+j]*(1-noise*.5)+(r()-.5)*noise*.3+noise*.05);recon[i*L+j]=recon[j*L+i]=v}
+  for(let i=0;i<L;i++)for(let j=0;j<L;j++){
+    const k=i*L+j,p=P[k];let v;
+    if(state.map==="target")v=p;else if(state.map==="recon")v=recon[k];
+    else if(state.map==="resid")v=Math.abs(p-recon[k])*2.5;
+    else v=Math.sqrt(f.acts[i]*f.acts[j])/fm*(.3+.7*p);
+    const c=ramp(v,MAPRAMP),o=k*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;
+  }
+  g.putImageData(img,0,0);
+  const step=L>300?100:L>120?50:25;let a="",b="";
+  for(let t=step;t<L;t+=step){a+=`<span style="top:${t/L*100}%">${t}</span>`;b+=`<span style="left:${t/L*100}%">${t}</span>`}
+  $("axisL").innerHTML=a;$("axisB").innerHTML=b;
+  $("mapCap").textContent={target:"contact-weighted z projection",recon:"PLT reconstruction",resid:"|z − ẑ|, scaled ×2.5",feat:`#${pad4(f.id)} outer product`}[state.map];
+}
+$("map").addEventListener("mousemove",e=>{
+  const res=state.res;if(!res)return;const rc=e.target.getBoundingClientRect(),L=res.ctx.L;
+  const j=Math.floor((e.clientX-rc.left)/rc.width*L),i=Math.floor((e.clientY-rc.top)/rc.height*L);
+  if(i<0||j<0||i>=L||j>=L)return;
+  const tip=$("mapTip"),box=$("mapwrap").getBoundingClientRect(),c=res.ctx;
+  tip.innerHTML=`${c.s[i]}${i+1} · ${c.s[j]}${j+1} <span class="m">|i−j| ${Math.abs(i-j)}</span><br>Cα–Cα ${c.D[i*L+j].toFixed(1)} Å · z ${c.P[i*L+j].toFixed(2)}`;
+  tip.style.display="block";
+  tip.style.left=Math.min(e.clientX-box.left+14,box.width-tip.offsetWidth-4)+"px";tip.style.top=(e.clientY-box.top+14)+"px";
+});
+$("map").addEventListener("mouseleave",()=>$("mapTip").style.display="none");
+
+/* -------------------------------------------------------------- charts */
+function lineChart(el,values,{min=0,max,fmt=v=>v.toFixed(2),hi=-1,label="",color="#0e9c86"}){
+  const W=340,H=190,pl=40,pr=12,pt=14,pb=30;
+  max=max??(Math.max(...values)*1.15||1);
+  const x=i=>pl+i*(W-pl-pr)/(values.length-1),y=v=>pt+(1-(v-min)/(max-min||1))*(H-pt-pb);
+  const path=values.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const grid=[0,.5,1].map(t=>{const v=min+(max-min)*t;return`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="#ebe8e0"/><text x="${pl-8}" y="${y(v)+3.5}" text-anchor="end" font-size="10" fill="#8b9693" font-family="JetBrains Mono, ui-monospace, monospace">${fmt(v)}</text>`}).join("");
+  const xs=LAYERS.map((l,i)=>`<text x="${x(i)}" y="${H-12}" text-anchor="middle" font-size="10" font-family="JetBrains Mono, ui-monospace, monospace" fill="${i===hi?"#12201e":"#8b9693"}" font-weight="${i===hi?600:400}">${l}</text>`).join("");
+  const pts=values.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===hi?5:4}" fill="${i===hi?color:"#fff"}" stroke="${color}" stroke-width="2"/><circle class="hit" data-i="${i}" cx="${x(i)}" cy="${y(v)}" r="14" fill="transparent"/>`).join("");
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${grid}<line id="xh" y1="${pt}" y2="${H-pb}" stroke="#d3cfc3" stroke-dasharray="3 3" opacity="0"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>${pts}${xs}<text x="${(pl+W-pr)/2}" y="${H}" text-anchor="middle" font-size="10" fill="#8b9693" font-family="Inter, system-ui, sans-serif">Pairformer block</text></svg><div class="tip"></div>`;
+  const tip=el.querySelector(".tip"),xh=el.querySelector("#xh");
+  el.querySelectorAll(".hit").forEach(c=>{
+    c.addEventListener("mouseenter",()=>{const i=+c.dataset.i,box=el.getBoundingClientRect(),s=box.width/W;
+      xh.setAttribute("x1",x(i));xh.setAttribute("x2",x(i));xh.setAttribute("opacity",1);
+      tip.innerHTML=`block ${LAYERS[i]} <span class="m">·</span> ${label} <b>${fmt(values[i])}</b>`;tip.style.display="block";
+      tip.style.left=Math.min(x(i)*s+10,box.width-tip.offsetWidth-2)+"px";tip.style.top=(y(values[i])*s-34)+"px"});
+    c.addEventListener("mouseleave",()=>{tip.style.display="none";xh.setAttribute("opacity",0)});
+  });
+}
+function drawDepth(){
+  const f=state.feat,ctx=state.res.ctx;let vals;
+  const base=FEATURES.find(x=>x.id===f.id);
+  if(base){const raw=base.f(ctx.s,ctx).map(v=>Math.max(0,v)),m=raw.reduce((a,b)=>a+b,0)/raw.length;vals=LAYERS.map(l=>m*depthGain(base,l))}
+  else{const r=rng(f.id*31+hash(state.res.seq));vals=LAYERS.map(l=>l===state.layer?f.mean:f.mean*(.25+.7*r()))}
+  lineChart($("depthChart"),vals,{hi:LAYERS.indexOf(state.layer),label:"mean activation",color:FAM[f.fam].c==="#c3cbcf"?"#8b979b":FAM[f.fam].c});
+}
+function drawR2(){
+  const res=state.res,vals=r2Series(res.seq,res.ctx.L);vals[LAYERS.indexOf(state.layer)]=res.r2;
+  lineChart($("r2Chart"),vals,{min:.7,max:1,hi:LAYERS.indexOf(state.layer),label:"R²",color:"#0b5d56"});
+}
+
+/* -------------------------------------------------- method figure bits */
+(()=>{
+  // trunk: 48 blocks, six hooked
+  let h="";const x0=196,w=572/48;
+  for(let i=0;i<48;i++){
+    const hook=LAYERS.includes(i),x=x0+i*w;
+    h+=`<rect x="${x.toFixed(1)}" y="34" width="${(w-3).toFixed(1)}" height="88" rx="2.5" fill="${hook?"#0e9c86":"#e7e4dc"}"/>`;
+    if(hook)h+=`<text x="${(x+(w-3)/2).toFixed(1)}" y="140" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10" fill="#0b5d56">${i}</text>`;
+  }
+  document.getElementById("trunk").innerHTML=h;
+  // dashed hooks from every hooked block onto a bus that feeds the transcoder input
+  const hxs=LAYERS.map(l=>x0+l*w+(w-3)/2);
+  document.getElementById("hookline").setAttribute("d",hxs.map(x=>`M${x.toFixed(1)} 146 V172`).join("")+`M${hxs[0].toFixed(1)} 172 H${hxs[5].toFixed(1)} M271 172 V222`);
+  // structure thumbnail projected from the same backbone model as the explorer
+  {const c=analyze(PROTEINS.G),X=c.disp,ya=.9,pa=-.5,cy=Math.cos(ya),sy=Math.sin(ya),cx=Math.cos(pa),sx=Math.sin(pa);
+   const pr=X.map(p=>{const x1=p[0]*cy+p[2]*sy,z1=-p[0]*sy+p[2]*cy;return[x1,p[1]*cx-z1*sx,p[1]*sx+z1*cx]});
+   const xs=pr.map(p=>p[0]),ys=pr.map(p=>p[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+   const k=Math.min(240/(mxx-mnx),84/(mxy-mny)),ox=960-(mnx+mxx)/2*k,oy=78-(mny+mxy)/2*k;
+   const segs=[];for(let i=0;i<c.L-1;i++)segs.push([i,(pr[i][2]+pr[i+1][2])/2]);segs.sort((a,b)=>a[1]-b[1]);
+   const Wt={H:5.5,E:4,C:1.6};
+   document.getElementById("thumb").innerHTML=segs.map(([i])=>{const t=c.ss[i]===c.ss[i+1]?c.ss[i]:"C";return`<line x1="${(ox+pr[i][0]*k).toFixed(1)}" y1="${(oy+pr[i][1]*k).toFixed(1)}" x2="${(ox+pr[i+1][0]*k).toFixed(1)}" y2="${(oy+pr[i+1][1]*k).toFixed(1)}" stroke="${SSC[t]}" stroke-width="${Wt[t]}" stroke-linecap="round"/>`}).join("");}
+  // latent grid
+  const r=rng(7);const on=new Set();while(on.size<16)on.add(Math.floor(r()*160));
+  let lg="";for(let i=0;i<160;i++){const cx=504+(i%20)*10.7,cy=224+Math.floor(i/20)*8.6;lg+=`<rect x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="8" height="6.4" rx="1.5" fill="${on.has(i)?"#0e9c86":"#ebe8e0"}"/>`}
+  document.getElementById("latents").innerHTML=lg;
+  // mini pair map from chain G
+  const c=analyze(PROTEINS.G),n=24,cell=76/n;let mm="";
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const a=Math.floor(i*c.L/n),b=Math.floor(j*c.L/n),v=c.P[a*c.L+b];
+    mm+=`<rect x="${(972+j*cell).toFixed(2)}" y="${(234+i*cell).toFixed(2)}" width="${(cell+.2).toFixed(2)}" height="${(cell+.2).toFixed(2)}" fill="${rgb(ramp(v,MAPRAMP))}"/>`;
+  }
+  mm+=`<rect x="972" y="234" width="76" height="76" fill="none" stroke="#d3cfc3"/>`;
+  document.getElementById("minimap").innerHTML=mm;
+})();
+
+/* ----------------------------------------------------- family cards */
+(()=>{
+  const fams=[
+    {k:"chem",title:"Residue chemistry",txt:"Charge patches, aromatic rings, cysteines and purification tags. Readable straight from the sequence, these peak in the earliest blocks.",ids:[93,1422,268,577]},
+    {k:"ss",title:"Secondary structure",txt:"Helix periodicity, strand register, turns and capping boxes emerge in the middle of the trunk as local geometry is resolved.",ids:[412,1650,731,1109]},
+    {k:"fold",title:"Fold and contacts",txt:"Buried cores, amphipathic faces and long-range contact hubs dominate the deepest blocks, where the pair representation encodes the 3D fold.",ids:[1187,1333,840,1520]},
+  ];
+  const W=300,H=90,pl=4,pr=4;
+  $("fams").innerHTML=fams.map(fm=>{
+    const fs=FEATURES.filter(f=>fm.ids.includes(f.id)),col=FAM[fm.k].c;
+    const curves=fs.map((f,ix)=>{let d="";for(let l=0;l<=47;l++){const x=pl+l/47*(W-pl-pr),y=H-14-depthGain(f,l)*(H-24);d+=(l?"L":"M")+x.toFixed(1)+","+y.toFixed(1)}return`<path d="${d}" fill="none" stroke="${col}" stroke-width="${ix?1.4:2.2}" opacity="${ix?.45:1}"/>`}).join("");
+    const ticks=LAYERS.map(l=>{const x=pl+l/47*(W-pl-pr);return`<line x1="${x}" x2="${x}" y1="${H-14}" y2="${H-10}" stroke="#b9b5aa"/><text x="${x}" y="${H}" font-size="9" text-anchor="middle" fill="#8b9693" font-family="JetBrains Mono, ui-monospace, monospace">${l}</text>`}).join("");
+    return`<div class="famcard"><div class="top"><span class="dot" style="background:${col}"></span>${FAM[fm.k].name}</div><h3>${fm.title}</h3><p>${fm.txt}</p>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Activation of ${fm.title} features across Pairformer depth"><line x1="${pl}" x2="${W-pr}" y1="${H-14}" y2="${H-14}" stroke="#d3cfc3"/>${curves}${ticks}</svg>
+      <div class="ex">${fs.map(f=>`<span>#${pad4(f.id)} ${esc(f.name.split(" (")[0])}</span>`).join("")}</div></div>`;
+  }).join("");
+})();
+
+/* ------------------------------------------------------------- hero */
+(()=>{
+  const res=runModel(PROTEINS.G,24),f=res.feats.find(x=>x.id===412);
+  const hv=new Viewer($("heroCanvas"),{tip:$("heroTip"),pitch:-.45});
+  hv.tipText=i=>`<b>${THREE[res.ctx.s[i]]} ${i+1}</b> <span class="m">· ${SSN[res.ctx.ss[i]]}</span><br>#0412 activation <b>${f.acts[i].toFixed(3)}</b>`;
+  hv.set(res.ctx,colorsFor("feature",res,f));
+})();
+
+/* ------------------------------------------------------------- copy */
+const copy=(btn,src)=>$(btn).onclick=()=>{navigator.clipboard?.writeText($(src).innerText).then(()=>{const b=$(btn),t=b.textContent;b.textContent="Copied";setTimeout(()=>b.textContent=t,1400)})};
+copy("copyCode","code");copy("copyCite","bib");
+
+execute(false);
+})();
+</script>
+</body>
+</html>
