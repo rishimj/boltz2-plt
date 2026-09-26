@@ -68,7 +68,7 @@ python universal_transcoder/validate_multi_layer.py \
 
 ```bash
 python scripts/verify_plt_structure.py \
-  --fasta ../examples/prot.fasta --plt-checkpoints plt_checkpoints --layers 0 --output verification
+  --checkpoint ../boltz2_conf.ckpt --fasta ../examples/prot.fasta --plt-checkpoints plt_checkpoints --layers 0 --output verification
 ```
 
 ## Architecture
