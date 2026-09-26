@@ -1,325 +1,86 @@
 <div align="center">
-  <h1>Per-Layer Transcoder (PLT)</h1>
-  <h3>Sparse Autoencoders for Boltz2 Protein Structure Prediction Interpretability</h3>
-  <br>
-  <a href="https://boltz2-plt.20.25.227.252.sslip.io/">🚀 Live Demo</a> • 
-  <a href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000">📊 Presentation</a> • 
-  <a href="transcoder/documentation">📖 Documentation</a> •
-  <a href="https://github.com/jwohlwend/boltz">🧬 Boltz2 Repository</a>
+  <h1>Boltz2 PLT</h1>
+  <p><b>Per-Layer Transcoders for interpreting Boltz2 protein structure prediction</b></p>
+  <a href="https://boltz2-plt.20.25.227.252.sslip.io/"><b>Live Demo</b></a> ·
+  <a href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000"><b>Presentation</b></a> ·
+  <a href="transcoder/documentation"><b>Docs</b></a>
 </div>
 
 ---
 
-## What is PLT?
+Boltz2 is a state-of-the-art biomolecular structure prediction model. This project opens up its
+Pairformer trunk with **sparse Per-Layer Transcoders (PLTs)**: small models that rewrite each
+layer's activations as a handful of human-readable features, so you can see what the network is
+computing at every depth.
 
-**Per-Layer Transcoder (PLT)** is a sparse autoencoder framework for discovering interpretable features in Boltz2's neural network activations. By training independent transcoders on each layer of Boltz2's Pairformer trunk, we can:
+- **Sparse, interpretable features:** each 384-d activation is expressed with just **16 of 2,048** learned features (0.8% active).
+- **Full-depth coverage:** independent transcoders for Pairformer layers **0, 8, 16, 24, 32 and 40**.
+- **End-to-end pipeline:** streams activations straight from live Boltz2 predictions, trains, validates, and can splice the PLT back into the model's forward pass.
+- **Reproducible by design:** fixed seeds, deterministic cuDNN, and a verified deterministic Boltz2 baseline.
 
-- **Decode what the model learns**: Discover interpretable features like secondary structure patterns, contact predictions, and structural motifs
-- **Track feature evolution**: Compare how representations change across network depth (layers 0, 8, 16, 24, 32, 40)
-- **Achieve high reconstruction**: Reconstruct layer activations with sparse, human-understandable features (only 16 active per example)
-- **Enable mechanistic interpretability**: Move beyond black-box neural networks toward understanding how structure prediction works
+## Results
 
-### Key Features
+Trained on 10 diverse protein chains (all 6 layers in ~4.3 GPU-hours) and benchmarked per layer:
 
-- ✅ **Sparse encoding**: 384-dimensional activations → 2048 sparse features (TopK=16 active)
-- ✅ **Multi-layer training**: Independent transcoders for 6 key Pairformer layers
-- ✅ **Online training**: Stream data from Boltz2 predictions during training
-- ✅ **Deterministic**: Reproducible training with fixed seeds and cuDNN settings
-- ✅ **Dead neuron resurrection**: Automatically revive inactive features
-- ✅ **Unit-norm decoder weights**: Stable learned representations
+| Pairformer layer | 0 | 8 | 16 | 24 | 32 | 40 |
+|---|---|---|---|---|---|---|
+| Reconstruction R² | **0.95** | 0.74 | 0.72 | 0.71 | 0.71 | 0.74 |
+| Active features | 16 / 2048 | 16 / 2048 | 16 / 2048 | 16 / 2048 | 16 / 2048 | 16 / 2048 |
 
----
+All six transcoders trained successfully with unit-norm decoders and zero failed layers.
 
-## Installation
+## How it was validated
 
-### Requirements
+1. **Deterministic baseline:** two identical Boltz2 forward passes must match to within 1e-6 on activations and 1e-5 Å on structure ([`deterministic_baseline.py`](transcoder/scripts/deterministic_baseline.py)).
+2. **Reconstruction benchmark:** per-layer MSE, RMSE and R² plus sparsity and decoder-norm checks ([`validate_multi_layer.py`](transcoder/universal_transcoder/validate_multi_layer.py)).
+3. **In-model verification:** the trained PLT replaces the real layer inside Boltz2, and the predicted structure is compared with the original by RMSD and pLDDT ([`verify_plt_structure.py`](transcoder/scripts/verify_plt_structure.py)).
 
-- Python 3.10+
-- PyTorch 2.0+ with CUDA support
-- Boltz2 (installed as base dependency)
-- GPU with sufficient VRAM (24GB+ recommended)
+## Quick start
 
-### Setup
-
-```bash
-# Clone and navigate to the repository
-git clone https://github.com/rishimj/boltz2-plt.git
-cd boltz2-plt
-
-# Create and activate virtual environment
-python -m venv plt_env
-source plt_env/bin/activate
-
-# Install Boltz2 and dependencies
-pip install boltz[cuda] -U
-pip install torch pytorch-lightning einops einx numpy scipy
-
-# Download Boltz2 checkpoint (required for activation collection)
-wget https://model-gateway.boltz.bio/boltz2_conf.ckpt -O boltz2_checkpoint.ckpt
-```
-
----
-
-## Quick Start: Training PLT
-
-### Step 1: Prepare Your Data
-
-PLT works with protein FASTA sequences. The system will automatically:
-1. Run Boltz2 predictions on the sequences
-2. Collect activations from specified layers
-3. Train sparse autoencoders on those activations
-
-Prepare a directory with `.fasta` files:
-```bash
-# Example
-examples/
-├── protein_A.fasta
-├── protein_B.fasta
-└── protein_C.fasta
-```
-
-Or use the included multi-protein split dataset:
-```bash
-examples/multi_protein_split/
-├── A.fasta  (protein chains)
-├── B.fasta
-├── C.fasta
-└── ... (10 proteins total)
-```
-
-### Step 2: Collect Activations & Train PLT
+Requires Python 3.10+, PyTorch 2 and a CUDA GPU (24 GB+ recommended).
 
 ```bash
+git clone https://github.com/rishimj/boltz2-plt.git && cd boltz2-plt
+python -m venv .venv && source .venv/bin/activate
+pip install "boltz[cuda]" -U && pip install pytorch-lightning einops einx scipy
+wget https://model-gateway.boltz.bio/boltz2_conf.ckpt -O boltz2_conf.ckpt
 cd transcoder
-python universal_transcoder/train_online_multi_layer.py \
-    --fasta-dir ../examples/multi_protein_split \
-    --checkpoint-dir ./trained_plt_checkpoints \
-    --layers 0 8 16 24 32 40 \
-    --epochs 20 \
-    --batch-size 10 \
-    --learning-rate 0.001 \
-    --seed 42
 ```
 
-**Key Parameters:**
-- `--fasta-dir`: Directory containing FASTA files
-- `--layers`: Which Pairformer layers to train on (0, 8, 16, 24, 32, 40 recommended)
-- `--epochs`: Training epochs (20-100 typical)
-- `--batch-size`: Proteins per batch (smaller = less VRAM)
-- `--learning-rate`: Learning rate (0.0001-0.001 typical)
-- `--seed`: Seed for reproducibility (42 used in our experiments)
-
-### Step 3: Validate & Analyze Results
+**Train** transcoders on all six layers, streaming activations from Boltz2:
 
 ```bash
-python validation_scripts/validate_multi_layer.py \
-    --checkpoint-dir ./trained_plt_checkpoints \
-    --fasta-dir ../examples/multi_protein_split \
-    --layers 0 8 16 24 32 40
+python universal_transcoder/train_online_multi_layer.py \
+  --checkpoint ../boltz2_conf.ckpt --fasta ../examples/multi_protein_split \
+  --layers 0 8 16 24 32 40 --checkpoint_dir plt_checkpoints --seed 42
 ```
 
-This generates:
-- **Reconstruction R²**: How well sparse features recover original activations
-- **Sparsity metrics**: Mean active features, dead neuron count
-- **Per-layer analysis**: Feature distribution and complexity trends
+**Benchmark** reconstruction quality:
 
----
-
-## Trained Models & Results
-
-We've trained PLT models on a dataset of 10 diverse proteins with 20 epochs:
-
-**Training Configuration:**
-```yaml
-Proteins: 10 (diverse chains: A-J from multi_protein_split)
-Layers: 0, 8, 16, 24, 32, 40 (6 independent transcoders)
-Epochs: 20
-Batch Size: 10
-Learning Rate: 0.001
-Seed: 42
-Model Dimensions:
-  - Input (single representation): 384
-  - Hidden (feature space): 2048
-  - TopK sparsity: 16 active features
-  - Pair representation output: 128
+```bash
+python collection_scripts/collect_multi_layer.py \
+  --checkpoint ../boltz2_conf.ckpt --fasta ../examples/multi_protein_split --output activations
+python universal_transcoder/validate_multi_layer.py \
+  --checkpoint_dir plt_checkpoints --data_dir activations
 ```
 
-**Model Checkpoint Locations:**
-```
-transcoder/overnight_runs/online_train_split10_full_20260409_224033_checkpoints/
-├── layer_00/model.pt
-├── layer_08/model.pt
-├── layer_16/model.pt
-├── layer_24/model.pt
-├── layer_32/model.pt
-└── layer_40/model.pt
-```
+**Verify** inside Boltz2 by swapping a layer for its transcoder:
 
----
+```bash
+python scripts/verify_plt_structure.py \
+  --fasta ../examples/prot.fasta --plt-checkpoints plt_checkpoints --layers 0 --output verification
+```
 
 ## Architecture
 
-### Per-Layer Transcoder (PLT) Model
-
 ```
-Input: x ∈ ℝ^384 (single representation from Boltz2 layer)
-  ↓
-[Normalize] x̂ = (x - μ) / σ
-  ↓
-[Encode] h = W_enc @ x̂ + b_enc  →  h ∈ ℝ^2048
-  ↓
-[TopK Sparsity] z = TopK(h, k=16)  →  only 16 values active
-  ↓
-[Decode] y = W_dec @ z + b_dec  →  y ∈ ℝ^128 (pair representation)
-  ↓
-[Denormalize] ŷ = y * σ + μ
-  ↓
-Output: ŷ ∈ ℝ^128 (reconstructed pair representation)
-
-Loss: MSE(ŷ, target) + λ * L1_norm(z)
+Boltz2 layer activation (384) → normalize → encoder → TopK (16 of 2048) → decoder → reconstruction
 ```
 
-### Key Design Choices
+Trained with reconstruction and consistency losses, an auxiliary TopK loss that revives dead
+features, and unit-norm decoder weights. Full details are in the
+[architecture guide](transcoder/documentation/PLT_ARCHITECTURE_GUIDE.md).
 
-| Component | Design | Rationale |
-|-----------|--------|-----------|
-| **Encoder** | Linear layer | Fast, interpretable; non-linearity from ReLU after |
-| **TopK Sparsity** | Keep top 16 of 2048 | ~1% active (interpretable, prevents overfitting) |
-| **Decoder** | Unit-norm weights | Prevents feature collapse and unbounded growth |
-| **Dead Neuron Resurrection** | Reinitialize unused features | Prevents feature redundancy over training |
-| **Learned centering bias** | Per-layer preprocessing | Allows features to learn relative to layer statistics |
+## Built on
 
----
-
-## Documentation
-
-For detailed technical information:
-
-- **[PLT Architecture Guide](transcoder/documentation/PLT_ARCHITECTURE_GUIDE.md)** — Mathematical formulation, design principles, and implementation details
-- **[Multi-Layer PLT Guide](transcoder/documentation/MULTI_LAYER_PLT_GUIDE.md)** — Full training pipeline, data flow, and component breakdown  
-- **[Quickstart Guide](transcoder/documentation/QUICKSTART.md)** — Step-by-step setup and testing with small dataset
-- **[Deep Reader Guide](transcoder/documentation/PLT_DEEP_READER_GUIDE.md)** — In-depth technical exploration
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `universal_transcoder/train_online_multi_layer.py` | Main training loop for multi-layer PLT |
-| `collection_scripts/collect_multi_layer.py` | Collect Boltz2 activations from multiple layers |
-| `validation_scripts/validate_multi_layer.py` | Evaluate trained PLT models |
-| `transcoder/documentation/` | Full technical documentation |
-
----
-
-## Project Structure
-
-```
-boltz2-plt/
-├── transcoder/
-│   ├── collection_scripts/      # Activation collection from Boltz2
-│   ├── universal_transcoder/    # PLT training implementation
-│   ├── validation_scripts/      # Evaluation and analysis
-│   ├── overnight_runs/          # Trained checkpoints & logs
-│   ├── documentation/           # Technical guides
-│   │   ├── PLT_ARCHITECTURE_GUIDE.md
-│   │   ├── MULTI_LAYER_PLT_GUIDE.md
-│   │   ├── QUICKSTART.md
-│   │   └── ...
-│   └── shell_scripts/           # Training automation
-├── examples/                    # Example protein data
-│   ├── multi_protein_split/     # 10 diverse test proteins
-│   └── ...
-├── boltz2_checkpoint.ckpt       # Boltz2 model (required)
-└── README.md                    # This file
-```
-
----
-
-## Dependencies: Boltz2
-
-PLT operates on activations from **Boltz2**, a state-of-the-art biomolecular structure prediction model:
-
-- **Paper**: [Boltz-2: Towards Accurate and Efficient Binding Affinity Prediction](https://doi.org/10.1101/2025.06.14.659707)
-- **Repository**: [jwohlwend/boltz](https://github.com/jwohlwend/boltz)
-- **License**: MIT
-
-Our PLT framework is architecture-agnostic and can be adapted to work with other structure prediction models.
-
----
-
-## Citation
-
-If you use PLT in your research, please cite:
-
-```bibtex
-@misc{plt_sparse_autoencoders,
-  title={Per-Layer Transcoder: Sparse Autoencoders for Biomolecular Structure Prediction Interpretability},
-  author={Manimaran, Rishi},
-  year={2026},
-  url={https://github.com/rishimj/boltz2-plt}
-}
-```
-
-Also cite Boltz2 if you use its activations:
-
-```bibtex
-@article{passaro2025boltz2,
-  author = {Passaro, Saro and Corso, Gabriele and Wohlwend, Jeremy and Reveiz, Mateo and Thaler, Stephan and Somnath, Vignesh Ram and Getz, Noah and Portnoi, Tally and Roy, Julien and Stark, Hannes and Kwabi-Addo, David and Beaini, Dominique and Jaakkola, Tommi and Barzilay, Regina},
-  title = {Boltz-2: Towards Accurate and Efficient Binding Affinity Prediction},
-  year = {2025},
-  doi = {10.1101/2025.06.14.659707},
-  journal = {bioRxiv}
-}
-```
-
----
-
-## License
-
-MIT License — freely available for academic and commercial use.
-
----
-
-## Troubleshooting
-
-**"CUDA out of memory"**
-```bash
-# Reduce batch size
-python universal_transcoder/train_online_multi_layer.py ... --batch-size 4
-```
-
-**"No module named 'boltz'"**
-```bash
-# Ensure environment is activated and boltz installed
-source plt_env/bin/activate
-pip install boltz[cuda] -U
-```
-
-**"Checkpoint not found"**
-```bash
-# Download Boltz2 checkpoint
-wget https://model-gateway.boltz.bio/boltz2_conf.ckpt -O boltz2_checkpoint.ckpt
-```
-
-**"Error in compute_ptms"**
-This is a known issue with certain protein sequences. The training continues and skips problematic proteins. Check the log file for details.
-
----
-
-## Related Work
-
-- **Sparse Autoencoders for Interpretability**: [Anthropic's SAE work](https://www.anthropic.com/research/scalable-interpretability-via-sparse-autoencoders)
-- **Boltz2 Structure Prediction**: [Boltz GitHub](https://github.com/jwohlwend/boltz)
-- **Neural Network Interpretability**: [Interpretability in the Wild (IITW)](https://arxiv.org/abs/2312.04782)
-
----
-
-## Contact & Questions
-
-For questions, suggestions, or contributions, please open an issue or contact the maintainers through GitHub.
-
-**Project Links:**
-- 🚀 [Interactive Demo](https://boltz2-plt.20.25.227.252.sslip.io/) ([GitHub Pages mirror](https://rishimj.github.io/boltz2-plt/); source in [`site/`](site/))
-- 📊 [PLT Presentation](https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000)
-- 📖 [Full Documentation](transcoder/documentation/)
-- 🧬 [Boltz2 Repository](https://github.com/jwohlwend/boltz)
+[Boltz2](https://github.com/jwohlwend/boltz) (MIT). Released under the MIT License.
