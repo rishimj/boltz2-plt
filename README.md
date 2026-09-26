@@ -2,8 +2,7 @@
   <h1>Boltz2 PLT</h1>
   <p><b>Per-Layer Transcoders for interpreting Boltz2 protein structure prediction</b></p>
   <a href="https://boltz2-plt.20.25.227.252.sslip.io/"><b>Live Demo</b></a> ·
-  <a href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000"><b>Presentation</b></a> ·
-  <a href="transcoder/documentation"><b>Docs</b></a>
+  <a href="https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000"><b>Presentation</b></a>
 </div>
 
 ---
