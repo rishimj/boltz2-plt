@@ -319,7 +319,7 @@ This is a known issue with certain protein sequences. The training continues and
 For questions, suggestions, or contributions, please open an issue or contact the maintainers through GitHub.
 
 **Project Links:**
-- 🚀 [Interactive Demo](https://boltz2-plt.20.25.227.252.sslip.io/) ([GitHub Pages mirror](https://rishimj.github.io/boltz2-plt/); browser demo with simulated outputs; source in [`site/`](site/))
+- 🚀 [Interactive Demo](https://boltz2-plt.20.25.227.252.sslip.io/) ([GitHub Pages mirror](https://rishimj.github.io/boltz2-plt/); source in [`site/`](site/))
 - 📊 [PLT Presentation](https://docs.google.com/presentation/d/e/2PACX-1vTLHgXL7Q1hIYD7Hdb7uVUBhktBvkhM-GIPkFLfeD9rVm3-nBfRNfwPm7mtGHoZHA/pub?start=false&loop=false&delayms=3000)
 - 📖 [Full Documentation](transcoder/documentation/)
 - 🧬 [Boltz2 Repository](https://github.com/jwohlwend/boltz)
