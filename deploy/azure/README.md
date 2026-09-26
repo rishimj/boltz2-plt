@@ -25,7 +25,7 @@ internet ──443──> Caddy ──> /srv/boltz2-plt/www/index.html   (file_s
 | Hostname for this site | `boltz2-plt.20.25.227.252.sslip.io` |
 | Files on the VM | `/srv/boltz2-plt/www/` (root-owned, world-readable) |
 | SSH firewall rule | NSG inbound rule named `ssh-home`, allows one home IP |
-| Other tenants | `risk-radar.20.25.227.252.sslip.io` (RiskRadar), plus podcast-qna |
+| Other tenants | `risk-radar.20.25.227.252.sslip.io` (RiskRadar), `prism-bio.20.25.227.252.sslip.io`, podcast-qna (`podcast-qna-rishi.northcentralus.cloudapp.azure.com`, API-only: `/` returns 404) |
 
 `sslip.io` is a public wildcard DNS service, so `boltz2-plt.20.25.227.252.sslip.io`
 already resolves to the VM with no DNS setup, and Caddy obtains a TLS certificate

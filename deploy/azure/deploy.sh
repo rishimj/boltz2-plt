@@ -30,7 +30,9 @@ rm -f "$tarball"
 
 echo "==> checking https://$SITE_HOST"
 for i in $(seq 1 30); do
-  if curl -sf "https://$SITE_HOST/" | grep -q "<title>Boltz2 PLT Explorer</title>"; then
+  # Capture first: with pipefail, `curl | grep -q` fails when grep exits early (SIGPIPE).
+  page=$(curl -sf "https://$SITE_HOST/" || true)
+  if grep -qF "<title>Boltz2 PLT Explorer</title>" <<<"$page"; then
     echo "   live: https://$SITE_HOST"; exit 0
   fi
   sleep 4
